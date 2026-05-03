@@ -24,21 +24,23 @@ export default function AddTransaction() {
     if (!file) return;
 
     setScanning(true);
-    setDebugText("Scanning list...");
+    setDebugText("Scanning... Please wait.");
     try {
       const results = await scanReceipt(file);
       setScannedResults(results);
       
-      if (results.length > 1) {
+      // We'll set the debug text from the scanReceipt if possible, 
+      // otherwise just a success message
+      setDebugText(`Scan complete! Found ${results.length} items.`);
+
+      if (results.length > 0) {
         toast.success(`Found ${results.length} transactions!`);
-      } else if (results.length === 1) {
-        toast.success("Found 1 transaction.");
       } else {
         toast.info("Could not find any clear transactions.");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to scan.");
+      toast.error("Failed to scan. Try a clearer photo.");
     } finally {
       setScanning(false);
     }

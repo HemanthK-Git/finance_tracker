@@ -22,39 +22,37 @@ function parseMultipleTransactions(text: string): ScannedData[] {
   const transactions: ScannedData[] = [];
   if (!text) return [];
 
-  // Extract ALL possible dates, notes, and amounts from the entire text
-  const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+202\d/gi;
-  const amountPattern = /(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/gi;
-  const notePattern = /(?:Paid to|Received from|Sent to|Credit from|From)\s+(.*?)(?=Debit|Credit|INR|Transaction|UTR|ID\s*:|\d{2}:\d{2}|$)/gi;
+  // Super-Relaxed Patterns
+  const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}.*?202\d/gi;
+  const amountPattern = /(?:INR|₹|Rs|inr|rs)\s*[:\-\s]*\s*([\d,]+\.?\d{0,2})/gi;
+  const notePattern = /(?:Paid|Received|Sent|Credit|From)\s*(?:to|from|to)?\s*(.*?)(?=Debit|Credit|INR|Transaction|UTR|ID\s*:|\d{2}:\d{2}|$)/gi;
 
   const allDates = text.match(datePattern) || [];
+  
   const allAmounts: number[] = [];
   let m;
   while ((m = amountPattern.exec(text)) !== null) {
     const val = parseFloat(m[1].replace(/,/g, ''));
-    if (val !== 2024 && val !== 2025 && val !== 2026) allAmounts.push(val);
+    if (val > 0 && val !== 2024 && val !== 2025 && val !== 2026) allAmounts.push(val);
   }
   
   const allNotes: {text: string, type: "income" | "expense"}[] = [];
   while ((m = notePattern.exec(text)) !== null) {
     const fullLine = m[0].toLowerCase();
     const isInc = fullLine.includes("received") || fullLine.includes("credit") || fullLine.includes("from");
-    allNotes.push({
-      text: m[1].trim().replace(/\s+\d{1,2}:\d{2}.*$/i, '').replace(/\*+/g, '').trim(),
-      type: isInc ? "income" : "expense"
-    });
+    const name = m[1].trim().replace(/\s+\d{1,2}:\d{2}.*$/i, '').replace(/\*+/g, '').trim();
+    if (name.length > 2 && !name.match(/Amount|Type|Details|Date/i)) {
+      allNotes.push({ text: name, type: isInc ? "income" : "expense" });
+    }
   }
 
-  // ZIP LOGIC: If we have a clear set of matches, pair them up
-  // We prioritize the count that is most frequent (usually names or amounts)
   const count = Math.max(allDates.length, allAmounts.length, allNotes.length);
-  
   for (let i = 0; i < count; i++) {
     const amount = allAmounts[i];
     const noteObj = allNotes[i];
     const dateStr = allDates[i];
 
-    if (amount && (noteObj || dateStr)) {
+    if (amount) {
       let finalDate = new Date().toISOString().split('T')[0];
       if (dateStr) {
         try {
@@ -70,27 +68,6 @@ function parseMultipleTransactions(text: string): ScannedData[] {
         category: noteObj?.type === "income" ? "Income" : detectCategory(noteObj?.text || ""),
         date: finalDate
       });
-    }
-  }
-
-  // Fallback: If zipping failed to produce results, try the old line-by-line
-  if (transactions.length === 0) {
-    const lines = text.split('\n');
-    for (const line of lines) {
-      const amtMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
-      if (amtMatch) {
-        const val = parseFloat(amtMatch[1].replace(/,/g, ''));
-        if (val > 0 && val !== 2026) {
-          const isInc = line.toLowerCase().includes("received") || line.toLowerCase().includes("credit");
-          transactions.push({
-            type: isInc ? "income" : "expense",
-            amount: val,
-            note: isInc ? "Income Received" : "Expense",
-            category: isInc ? "Income" : "Other",
-            date: new Date().toISOString().split('T')[0]
-          });
-        }
-      }
     }
   }
 
