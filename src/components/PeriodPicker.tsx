@@ -2,20 +2,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export type Period = { mode: "month" | "year"; year: number; month: number };
+export type Period = { mode: "day" | "month" | "year"; year: number; month: number; day: number };
 
 export function PeriodPicker({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
   const years = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
+  const daysInMonth = new Date(value.year, value.month + 1, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <Select value={value.mode} onValueChange={(v) => onChange({ ...value, mode: v as "month" | "year" })}>
+      <Select value={value.mode} onValueChange={(v) => onChange({ ...value, mode: v as any })}>
         <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
         <SelectContent>
+          <SelectItem value="day">Daily</SelectItem>
           <SelectItem value="month">Monthly</SelectItem>
           <SelectItem value="year">Yearly</SelectItem>
         </SelectContent>
       </Select>
-      {value.mode === "month" && (
+      {value.mode === "day" && (
+        <Select value={String(value.day)} onValueChange={(v) => onChange({ ...value, day: Number(v) })}>
+          <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {days.map((d) => <SelectItem key={d} value={String(d)}>{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
+      {(value.mode === "month" || value.mode === "day") && (
         <Select value={String(value.month)} onValueChange={(v) => onChange({ ...value, month: Number(v) })}>
           <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
           <SelectContent>

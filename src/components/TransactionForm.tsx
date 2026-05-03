@@ -39,7 +39,7 @@ export function TransactionForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      type: "expense",
+      type: scannedData?.type ?? "expense",
       amount: scannedData?.amount ?? undefined as any,
       category: scannedData?.category ?? "Food",
       date: scannedData?.date ? new Date(scannedData.date) : new Date(),
@@ -62,7 +62,7 @@ export function TransactionForm({
   useEffect(() => {
     if (scannedData) {
       form.reset({
-        type: "expense",
+        type: scannedData.type || "expense",
         amount: scannedData.amount as any,
         category: scannedData.category || "Food",
         date: scannedData.date ? new Date(scannedData.date) : new Date(),

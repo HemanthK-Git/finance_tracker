@@ -13,12 +13,12 @@ import {
   Timestamp,
   serverTimestamp
 } from "firebase/firestore";
-import { getDeviceId } from "@/lib/constants";
+import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
 export type Transaction = {
   id: string;
-  device_id: string;
+  user_id: string;
   amount: number;
   type: "income" | "expense";
   category: string;
@@ -39,15 +39,17 @@ export type TransactionInput = {
 const KEY = ["transactions"];
 
 export function useTransactions() {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: KEY,
+    queryKey: [...KEY, user?.uid],
+    enabled: !!user,
     queryFn: async () => {
       try {
-        const deviceId = getDeviceId();
-        // Removed orderBy here because it requires a composite index which causes slow loading/errors
+        if (!user) return [];
         const q = query(
           collection(db, "transactions"),
-          where("device_id", "==", deviceId)
+          where("user_id", "==", user.uid)
         );
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => {
@@ -72,9 +74,12 @@ export function useTransactions() {
 
 export function useUpsertTransaction() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+
   return useMutation({
     mutationFn: async ({ id, input }: { id?: string; input: TransactionInput }) => {
-      const deviceId = getDeviceId();
+      if (!user) throw new Error("Must be logged in");
+      
       if (id) {
         const docRef = doc(db, "transactions", id);
         await updateDoc(docRef, { 
@@ -84,7 +89,7 @@ export function useUpsertTransaction() {
       } else {
         await addDoc(collection(db, "transactions"), {
           ...input,
-          device_id: deviceId,
+          user_id: user.uid,
           created_at: serverTimestamp(),
           updated_at: serverTimestamp()
         });

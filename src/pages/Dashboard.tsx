@@ -13,13 +13,21 @@ import { format } from "date-fns";
 export default function Dashboard() {
   const { data: txns = [], isLoading } = useTransactions();
   const now = new Date();
-  const [period, setPeriod] = useState<Period>({ mode: "month", year: now.getFullYear(), month: now.getMonth() });
+  const [period, setPeriod] = useState<Period>({ 
+    mode: "month", 
+    year: now.getFullYear(), 
+    month: now.getMonth(),
+    day: now.getDate() 
+  });
 
   const filtered = useMemo(() => {
     return txns.filter((t) => {
       const d = new Date(t.date);
       if (d.getFullYear() !== period.year) return false;
-      if (period.mode === "month" && d.getMonth() !== period.month) return false;
+      if (period.mode === "year") return true;
+      if (d.getMonth() !== period.month) return false;
+      if (period.mode === "month") return true;
+      if (d.getDate() !== period.day) return false;
       return true;
     });
   }, [txns, period]);
