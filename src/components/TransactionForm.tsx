@@ -15,6 +15,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CATEGORIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Transaction, TransactionInput } from "@/hooks/useTransactions";
+import { type ScannedData } from "@/lib/ocr";
 
 const schema = z.object({
   type: z.enum(["income", "expense"]),
@@ -27,9 +28,10 @@ const schema = z.object({
 export type FormValues = z.infer<typeof schema>;
 
 export function TransactionForm({
-  initial, onSubmit, submitting, submitLabel = "Save Transaction",
+  initial, scannedData, onSubmit, submitting, submitLabel = "Save Transaction",
 }: {
   initial?: Transaction | null;
+  scannedData?: ScannedData | null;
   onSubmit: (input: TransactionInput) => void;
   submitting?: boolean;
   submitLabel?: string;
@@ -38,10 +40,10 @@ export function TransactionForm({
     resolver: zodResolver(schema),
     defaultValues: {
       type: "expense",
-      amount: undefined as any,
-      category: "Food",
-      date: new Date(),
-      note: "",
+      amount: scannedData?.amount ?? undefined as any,
+      category: scannedData?.category ?? "Food",
+      date: scannedData?.date ? new Date(scannedData.date) : new Date(),
+      note: scannedData ? "Scanned from receipt" : "",
     },
   });
 
@@ -56,6 +58,18 @@ export function TransactionForm({
       });
     }
   }, [initial]);
+
+  useEffect(() => {
+    if (scannedData) {
+      form.reset({
+        type: "expense",
+        amount: scannedData.amount as any,
+        category: scannedData.category || "Food",
+        date: scannedData.date ? new Date(scannedData.date) : new Date(),
+        note: "Scanned from receipt",
+      });
+    }
+  }, [scannedData]);
 
   const type = form.watch("type");
 
