@@ -60,12 +60,18 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       if (trimmed.toLowerCase().includes("credit") || trimmed.toLowerCase().includes("received")) type = "income";
 
       // 4. Detect Note (Paid to / Received from / Merchant Name)
-      const noteMatch = trimmed.match(/(?:Paid to|Received from)\s+(.*?)(?=Debit|Credit|INR|Transaction|$)/i);
+      const noteMatch = trimmed.match(/(?:Paid to|Received from|Sent to)\s+(.*?)(?=Debit|Credit|INR|Transaction|$)/i);
       if (noteMatch) {
         note = noteMatch[1].trim();
-      } else if (!note && trimmed.length > 5 && !trimmed.match(/Debit|Credit|INR|202\d|Date|Transaction/i)) {
+      } else if (!note && trimmed.length > 4 && !trimmed.match(/Debit|Credit|INR|202\d|Date|Transaction/i)) {
         note = trimmed;
       }
+    }
+
+    // Special check for "Received from" if note is still empty
+    if (!note && block.toLowerCase().includes("received from")) {
+      const match = block.match(/Received from\s+(.*?)(?=Credit|INR|$)/i);
+      if (match) note = "Received from " + match[1].trim();
     }
 
     if (amount > 0 && note && note.length > 2 && !note.match(/Amount|Type|Details/i)) {
