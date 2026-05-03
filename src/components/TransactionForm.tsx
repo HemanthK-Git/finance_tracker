@@ -43,7 +43,7 @@ export function TransactionForm({
       amount: scannedData?.amount ?? undefined as any,
       category: scannedData?.category ?? "Food",
       date: scannedData?.date ? new Date(scannedData.date) : new Date(),
-      note: scannedData ? "Scanned from receipt" : "",
+      note: scannedData?.note || (scannedData ? "Scanned from receipt" : ""),
     },
   });
 
@@ -66,7 +66,7 @@ export function TransactionForm({
         amount: scannedData.amount as any,
         category: scannedData.category || "Food",
         date: scannedData.date ? new Date(scannedData.date) : new Date(),
-        note: "Scanned from receipt",
+        note: scannedData.note || "Scanned from receipt",
       });
     }
   }, [scannedData]);
