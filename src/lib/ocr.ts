@@ -22,52 +22,51 @@ function parseMultipleTransactions(text: string): ScannedData[] {
   const transactions: ScannedData[] = [];
   if (!text) return [];
 
-  // Super-Relaxed Patterns
-  const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}.*?202\d/gi;
-  const amountPattern = /(?:INR|₹|Rs|inr|rs)\s*[:\-\s]*\s*([\d,]+\.?\d{0,2})/gi;
-  const notePattern = /(?:Paid|Received|Sent|Credit|From)\s*(?:to|from|to)?\s*(.*?)(?=Debit|Credit|INR|Transaction|UTR|ID\s*:|\d{2}:\d{2}|$)/gi;
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  
+  let stickyDate = new Date().toISOString().split('T')[0];
+  let currentNote = "";
+  let currentType: "income" | "expense" = "expense";
 
-  const allDates = text.match(datePattern) || [];
-  
-  const allAmounts: number[] = [];
-  let m;
-  while ((m = amountPattern.exec(text)) !== null) {
-    const val = parseFloat(m[1].replace(/,/g, ''));
-    if (val > 0 && val !== 2024 && val !== 2025 && val !== 2026) allAmounts.push(val);
-  }
-  
-  const allNotes: {text: string, type: "income" | "expense"}[] = [];
-  while ((m = notePattern.exec(text)) !== null) {
-    const fullLine = m[0].toLowerCase();
-    const isInc = fullLine.includes("received") || fullLine.includes("credit") || fullLine.includes("from");
-    const name = m[1].trim().replace(/\s+\d{1,2}:\d{2}.*$/i, '').replace(/\*+/g, '').trim();
-    if (name.length > 2 && !name.match(/Amount|Type|Details|Date/i)) {
-      allNotes.push({ text: name, type: isInc ? "income" : "expense" });
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+
+    // 1. Update Sticky Date
+    const dateMatch = line.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}.*?202\d/i);
+    if (dateMatch) {
+      try {
+        const d = new Date(dateMatch[0].replace(',', ''));
+        if (!isNaN(d.getTime())) stickyDate = d.toISOString().split('T')[0];
+      } catch (e) {}
     }
-  }
 
-  const count = Math.max(allDates.length, allAmounts.length, allNotes.length);
-  for (let i = 0; i < count; i++) {
-    const amount = allAmounts[i];
-    const noteObj = allNotes[i];
-    const dateStr = allDates[i];
+    // 2. Update Type
+    if (lower.includes("debit")) currentType = "expense";
+    if (lower.includes("credit") || lower.includes("received")) currentType = "income";
 
-    if (amount) {
-      let finalDate = new Date().toISOString().split('T')[0];
-      if (dateStr) {
-        try {
-          const d = new Date(dateStr.replace(',', ''));
-          if (!isNaN(d.getTime())) finalDate = d.toISOString().split('T')[0];
-        } catch (e) {}
+    // 3. Update Sticky Note (Merchant Name)
+    const noteMatch = line.match(/(?:Paid|Received|Sent|Credit|From)\s*(?:to|from|to)?\s*(.*?)(?=Debit|Credit|INR|Transaction|UTR|ID\s*:|\d{2}:\d{2}|$)/i);
+    if (noteMatch) {
+      currentNote = noteMatch[1].trim().replace(/\*+/g, '').trim();
+    }
+
+    // 4. Find Amount and COMMIT the transaction
+    const amtMatch = line.match(/(?:INR|₹|Rs|inr|rs)\s*[:\-\s]*\s*([\d,]+\.?\d{0,2})/i);
+    if (amtMatch) {
+      const val = parseFloat(amtMatch[1].replace(/,/g, ''));
+      if (val > 0 && val !== 2024 && val !== 2025 && val !== 2026) {
+        // We found a price! Create a transaction with whatever info we have "stuck"
+        transactions.push({
+          type: lower.includes("received") || lower.includes("credit") ? "income" : currentType,
+          amount: val,
+          note: currentNote || "Transaction",
+          category: currentType === "income" ? "Income" : detectCategory(currentNote),
+          date: stickyDate
+        });
+        
+        // Reset the note so we don't reuse it for the next price unless a new one is found
+        currentNote = "";
       }
-
-      transactions.push({
-        type: noteObj?.type || "expense",
-        amount,
-        note: noteObj?.text || "Transaction",
-        category: noteObj?.type === "income" ? "Income" : detectCategory(noteObj?.text || ""),
-        date: finalDate
-      });
     }
   }
 
