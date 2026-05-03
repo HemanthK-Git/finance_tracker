@@ -50,7 +50,7 @@ export default function AddTransaction() {
     }
   };
 
-  const { transactions } = useTransactions();
+  const { data: transactions = [] } = useTransactions();
 
   const handleBulkAdd = async () => {
     setScanning(true);
@@ -62,7 +62,7 @@ export default function AddTransaction() {
         // Check for duplicates (same amount, note, and date)
         const isDuplicate = transactions?.some(t => 
           t.amount === (res.amount || 0) && 
-          t.note === (res.note || "Bulk Scanned") && 
+          t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
           t.date === (res.date || new Date().toISOString().split('T')[0])
         );
 

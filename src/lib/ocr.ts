@@ -19,64 +19,86 @@ export async function scanReceipt(file: File): Promise<ScannedData[]> {
 }
 
 function parseMultipleTransactions(text: string): ScannedData[] {
-  const lines = text.split('\n');
   const transactions: ScannedData[] = [];
   
-  // Look for lines that have a price-like number at the end
-  // Patterns like: "NAME ... ₹20" or "NAME ... 20.00"
-  // We look for name strings followed by a currency symbol OR just a space then a number
-  const linePattern = /(.*?)(?:₹|rs|inr|usd|\$|\s)\s*[:\-\s]*\s*([\d,]+\.?\d{0,2})(?!\d)/gi;
+  // Split into blocks based on common separator patterns in statements
+  const blocks = text.split(/\n\s*\n|(?=Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
   
-  for (const line of lines) {
-    const match = linePattern.exec(line);
-    if (match) {
-      let note = match[1].trim();
-      let amountStr = match[2].replace(/,/g, '');
-      
-      // Fix common OCR error: '₹' read as '3', '2', 'z', or 's' right before the number
-      // If the note ends with a single digit/letter and then the amount starts, 
-      // it might be a misread symbol.
-      if (note.match(/[zZsS23]$/)) {
-        note = note.slice(0, -1).trim();
+  for (const block of blocks) {
+    const lines = block.split('\n');
+    let dateStr = "";
+    let note = "";
+    let amount = 0;
+    let type: "income" | "expense" = "expense";
+
+    for (const line of lines) {
+      // 1. Find Date (e.g. Apr 08, 2026)
+      const dateMatch = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}/i);
+      if (dateMatch) dateStr = dateMatch[0];
+
+      // 2. Find Amount (e.g. INR 20.00 or INR 15)
+      const amountMatch = line.match(/(?:INR|₹|Rs|USD|\$)\s*([\d,]+\.?\d{0,2})/i);
+      if (amountMatch) {
+        amount = parseFloat(amountMatch[1].replace(/,/g, ''));
       }
 
-      const amount = parseFloat(amountStr);
-      
-      // Fix cases where ₹ was read as 3 or 2 and joined to the number (e.g. 36.99 -> 6.99)
-      let finalAmount = amount;
-      if (amountStr.length >= 4 && (amountStr.startsWith('3') || amountStr.startsWith('2'))) {
-        // If it's something like 36.99 and we suspect 3 is the symbol
-        // We only do this if it helps match a more 'realistic' small payment
-        if (amount > 30 && amount < 40 && amountStr.includes('.')) {
-          finalAmount = parseFloat(amountStr.slice(1));
-        }
-      }
+      // 3. Detect Type (Debit/Credit keywords)
+      if (line.toLowerCase().includes("debit")) type = "expense";
+      if (line.toLowerCase().includes("credit") || line.toLowerCase().includes("received")) type = "income";
 
-      if (!isNaN(finalAmount) && finalAmount > 0 && note.length > 2) {
-        const rawNote = note;
-        // Clean up noise from the start of the note (like "2" from "22 hours ago")
-        note = note.replace(/^\d+\s+/, '').replace(/^Paid to\s+/i, '').replace(/^Received from\s+/i, '');
-
-        // Ignore noise keywords
-        const ignore = ["ago", "yesterday", "may", "june", "july", "2026", "2025", "2024", "sent from", "paid to"];
-        if (ignore.some(k => note.toLowerCase().includes(k))) continue;
-
-        transactions.push({
-          type: detectType(rawNote),
-          amount: finalAmount,
-          note: note || "Scanned Transaction",
-          category: detectCategory(note),
-          date: new Date().toISOString().split('T')[0] // Default to today for history lists
-        });
+      // 4. Detect Note/Merchant
+      if (line.match(/^(Paid to|Received from)/i)) {
+        note = line.replace(/^(Paid to|Received from)\s+/i, '').trim();
+      } else if (line.match(/^[A-Z\s]{4,30}$/) && !note && !line.match(/Debit|Credit|INR|Transaction/i)) {
+        // Backup: lines with all caps are often merchant names
+        note = line.trim();
       }
     }
-    linePattern.lastIndex = 0; // Reset for next line
+
+    if (amount > 0 && note && note.length > 2) {
+      // Standardize date
+      let finalDate = new Date().toISOString().split('T')[0];
+      if (dateStr) {
+        try {
+          const parsedDate = new Date(dateStr);
+          if (!isNaN(parsedDate.getTime())) {
+            finalDate = parsedDate.toISOString().split('T')[0];
+          }
+        } catch (e) {}
+      }
+
+      transactions.push({
+        type,
+        amount,
+        note: note.split("Transaction ID")[0].trim(), // Clean up trailing IDs
+        category: detectCategory(note),
+        date: finalDate
+      });
+    }
   }
 
-  // Fallback: If no lines matched, try the old single-receipt logic
+  // Backup: If blocks didn't find anything, try the old line-by-line regex
   if (transactions.length === 0) {
-    const data = parseReceiptText(text);
-    if (data.amount) transactions.push(data);
+    const linePattern = /(.*?)(?:₹|rs|inr|usd|\$|\s)\s*[:\-\s]*\s*([\d,]+\.?\d{0,2})(?!\d)/gi;
+    for (const line of text.split('\n')) {
+      const match = linePattern.exec(line);
+      if (match) {
+        let n = match[1].trim();
+        let a = parseFloat(match[2].replace(/,/g, ''));
+        if (a > 0 && n.length > 2) {
+          const ignore = ["ago", "yesterday", "may", "june", "july", "2026", "2025", "2024", "sent from", "paid to", "utr", "id :"];
+          if (ignore.some(k => n.toLowerCase().includes(k))) continue;
+          transactions.push({
+            type: detectType(n),
+            amount: a,
+            note: n.replace(/^(Paid to|Received from)\s+/i, '').trim(),
+            category: detectCategory(n),
+            date: new Date().toISOString().split('T')[0]
+          });
+        }
+      }
+      linePattern.lastIndex = 0;
+    }
   }
 
   return transactions;
