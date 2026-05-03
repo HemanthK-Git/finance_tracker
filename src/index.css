@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: 220 30% 98%;
+    --foreground: 224 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 30% 12%;
+
+    --primary: 158 64% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 158 70% 55%;
+
+    --secondary: 220 25% 95%;
+    --secondary-foreground: 224 30% 12%;
+
+    --muted: 220 20% 94%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 250 80% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --income: 158 64% 42%;
+    --expense: 0 75% 60%;
+    --savings: 250 80% 65%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: 158 64% 42%;
+
+    --radius: 0.85rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(158 64% 42%), hsl(168 70% 50%));
+    --gradient-accent: linear-gradient(135deg, hsl(250 80% 65%), hsl(280 75% 65%));
+    --gradient-expense: linear-gradient(135deg, hsl(0 75% 60%), hsl(20 80% 60%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 30% 98%));
+    --shadow-soft: 0 4px 20px -8px hsl(220 40% 30% / 0.08);
+    --shadow-elegant: 0 10px 40px -12px hsl(158 60% 30% / 0.18);
+    --shadow-glow: 0 0 40px hsl(158 70% 55% / 0.25);
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 224 30% 20%;
+    --sidebar-primary: 158 64% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 25% 95%;
+    --sidebar-accent-foreground: 224 30% 12%;
+    --sidebar-border: 220 20% 92%;
+    --sidebar-ring: 158 64% 42%;
+  }
+
+  .dark {
+    --background: 224 35% 7%;
+    --foreground: 220 20% 95%;
+
+    --card: 224 30% 11%;
+    --card-foreground: 220 20% 95%;
+
+    --popover: 224 30% 11%;
+    --popover-foreground: 220 20% 95%;
+
+    --primary: 158 70% 50%;
+    --primary-foreground: 224 35% 7%;
+    --primary-glow: 158 80% 60%;
+
+    --secondary: 224 25% 16%;
+    --secondary-foreground: 220 20% 95%;
+
+    --muted: 224 25% 16%;
+    --muted-foreground: 220 15% 60%;
+
+    --accent: 250 80% 70%;
+    --accent-foreground: 224 35% 7%;
+
+    --income: 158 70% 50%;
+    --expense: 0 80% 65%;
+    --savings: 250 80% 70%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 220 20% 95%;
+
+    --border: 224 25% 18%;
+    --input: 224 25% 18%;
+    --ring: 158 70% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(158 70% 45%), hsl(168 75% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(250 80% 60%), hsl(280 75% 60%));
+    --gradient-expense: linear-gradient(135deg, hsl(0 75% 55%), hsl(20 80% 55%));
+    --gradient-card: linear-gradient(180deg, hsl(224 30% 12%), hsl(224 30% 9%));
+    --shadow-soft: 0 4px 20px -8px hsl(0 0% 0% / 0.4);
+    --shadow-elegant: 0 10px 40px -12px hsl(158 80% 30% / 0.3);
+    --shadow-glow: 0 0 40px hsl(158 80% 60% / 0.3);
+
+    --sidebar-background: 224 35% 9%;
+    --sidebar-foreground: 220 20% 90%;
+    --sidebar-primary: 158 70% 50%;
+    --sidebar-primary-foreground: 224 35% 7%;
+    --sidebar-accent: 224 25% 14%;
+    --sidebar-accent-foreground: 220 20% 95%;
+    --sidebar-border: 224 25% 16%;
+    --sidebar-ring: 158 70% 50%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Sora', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .gradient-primary { background: var(--gradient-primary); }
+  .gradient-accent { background: var(--gradient-accent); }
+  .gradient-expense { background: var(--gradient-expense); }
+  .gradient-card { background: var(--gradient-card); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .transition-smooth { transition: all 0.3s var(--transition-smooth); }
+}
