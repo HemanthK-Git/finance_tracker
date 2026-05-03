@@ -20,73 +20,62 @@ export async function scanReceipt(file: File): Promise<ScannedData[]> {
 
 function parseMultipleTransactions(text: string): ScannedData[] {
   const transactions: ScannedData[] = [];
-  
-  // Clean up the text: remove noisy ID lines to avoid confusion, but KEEP lines with amounts
-  const cleanText = text.split('\n')
-    .filter(line => {
-      const hasAmount = line.match(/(?:INR|₹|Rs)\s*[\d,]+\.?\d{0,2}/i);
-      if (hasAmount) return true;
-      return !line.match(/Transaction ID|UTR No|Debited from|Credited to|Page \d+|Debited \d+/i);
-    })
-    .join('\n');
+  if (!text) return [];
 
-  // Split by the horizontal lines (often seen as dashes or long spaces) or by Dates
+  // Remove lines that are ONLY bank metadata, but keep lines with amounts
+  const lines = text.split('\n').filter(l => {
+    const trimmed = l.trim();
+    if (trimmed.match(/(?:INR|₹|Rs)\s*[\d,]+\.\d{2}/i)) return true; // Keep amounts
+    return !trimmed.match(/UTR No|Debited from|Credited to|Page \d+|Debited \d+/i);
+  });
+
+  // Rejoin and split by Date markers
+  const cleanText = lines.join('\n');
   const blocks = cleanText.split(/(?=Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
   
   for (const block of blocks) {
-    const lines = block.split('\n');
+    const blockLines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (blockLines.length === 0) continue;
+
     let dateStr = "";
     let note = "";
     let amount = 0;
     let type: "income" | "expense" = "expense";
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
+    // First pass: find basic info
+    for (const line of blockLines) {
+      // Date detection
+      const dateMatch = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+202\d/i);
+      if (dateMatch) dateStr = dateMatch[0];
 
-      // 1. Find Date (e.g. Apr 04, 2026)
-      const dateMatch = trimmed.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+202\d/i);
-      if (dateMatch) {
-        dateStr = dateMatch[0];
-      }
-
-      // 2. Find Amount (Ignore 2024, 2025, 2026)
-      const amountMatch = trimmed.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
+      // Amount detection (Strict decimal)
+      const amountMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
       if (amountMatch) {
         const val = parseFloat(amountMatch[1].replace(/,/g, ''));
-        if (val !== 2024 && val !== 2025 && val !== 2026) {
-          amount = val;
-        }
+        if (val !== 2024 && val !== 2025 && val !== 2026) amount = val;
       }
 
-      // 3. Detect Type
-      if (trimmed.toLowerCase().includes("debit")) type = "expense";
-      if (trimmed.toLowerCase().includes("credit") || trimmed.toLowerCase().includes("received")) type = "income";
+      // Type detection
+      if (line.toLowerCase().includes("debit")) type = "expense";
+      if (line.toLowerCase().includes("credit") || line.toLowerCase().includes("received")) type = "income";
+    }
 
-      // 4. Detect Note (Paid to / Received from / Merchant Name)
-      const noteMatch = trimmed.match(/(?:Paid to|Received from|Sent to)\s+(.*?)(?=Debit|Credit|INR|Transaction|$)/i);
+    // Second pass: find Note/Merchant
+    for (const line of blockLines) {
+      const noteMatch = line.match(/(?:Paid to|Received from|Sent to|Credit from)\s+(.*?)(?=Debit|Credit|INR|Transaction|10:|0\d:|1\d:|$)/i);
       if (noteMatch) {
         note = noteMatch[1].trim();
-      } else if (!note && trimmed.length > 4 && !trimmed.match(/Debit|Credit|INR|202\d|Date|Transaction/i)) {
-        note = trimmed;
+        if (line.toLowerCase().includes("received")) type = "income";
+        break;
       }
     }
 
-    // Special check for "Received from" or "Credit" if note is still empty
-    if (!note || amount === 0) {
-      const lowerBlock = block.toLowerCase();
-      if (lowerBlock.includes("received") || lowerBlock.includes("credit")) {
-        type = "income";
-        const amtMatch = block.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
-        if (amtMatch) amount = parseFloat(amtMatch[1].replace(/,/g, ''));
-        
-        const nameMatch = block.match(/(?:Received from|Credit from)\s+(.*?)(?=Credit|INR|Transaction|$)/i);
-        if (nameMatch) note = "Income: " + nameMatch[1].trim();
-        else if (!note) note = "Income Received";
-      }
+    // Fallback for note if still empty
+    if (!note && blockLines.length > 1) {
+      note = blockLines.find(l => l.length > 5 && !l.match(/202\d|INR|₹|Rs/i)) || blockLines[0];
     }
 
-    if (amount > 0 && note && note.length > 2 && !note.match(/Amount|Type|Details/i)) {
+    if (amount > 0 && note && note.length > 1 && !note.match(/Amount|Type|Details/i)) {
       let finalDate = new Date().toISOString().split('T')[0];
       if (dateStr) {
         try {
@@ -98,28 +87,26 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       transactions.push({
         type,
         amount,
-        note: note.split("Transaction")[0].trim().replace(/\*+/g, '').trim(), // Clean stars
-        category: "Income",
+        note: note.split("Transaction")[0].trim().replace(/\*+/g, '').trim(),
+        category: type === "income" ? "Income" : detectCategory(note),
         date: finalDate
       });
     }
   }
 
-  // Backup simple parser if blocks failed
+  // Final Safety Check: If no blocks worked, try line-by-line fallback
   if (transactions.length === 0) {
-    const lines = text.split('\n');
-    for (const line of lines) {
-      const amountMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
-      const noteMatch = line.match(/(?:Paid to|Received from|Sent to)\s+(.*?)(?=Transaction|Debit|Credit|INR|$)/i);
-      
-      if (amountMatch) {
-        const val = parseFloat(amountMatch[1].replace(/,/g, ''));
-        if (val > 0 && (noteMatch || line.match(/Received|Credit/i))) {
+    for (const line of text.split('\n')) {
+      const amtMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
+      if (amtMatch) {
+        const val = parseFloat(amtMatch[1].replace(/,/g, ''));
+        if (val > 0 && val !== 2026) {
+          const isInc = line.toLowerCase().includes("received") || line.toLowerCase().includes("credit");
           transactions.push({
-            type: line.toLowerCase().includes("received") || line.toLowerCase().includes("credit") ? "income" : "expense",
+            type: isInc ? "income" : "expense",
             amount: val,
-            note: noteMatch ? noteMatch[1].trim() : "Transaction",
-            category: line.toLowerCase().includes("received") ? "Income" : detectCategory(line),
+            note: isInc ? "Income Received" : "Expense",
+            category: isInc ? "Income" : "Other",
             date: new Date().toISOString().split('T')[0]
           });
         }
