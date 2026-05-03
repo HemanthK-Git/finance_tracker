@@ -42,18 +42,30 @@ export function useTransactions() {
   return useQuery({
     queryKey: KEY,
     queryFn: async () => {
-      const deviceId = getDeviceId();
-      const q = query(
-        collection(db, "transactions"),
-        where("device_id", "==", deviceId),
-        orderBy("date", "desc")
-      );
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        // Convert Firestore timestamps to string if needed, or keep as is
-      })) as Transaction[];
+      try {
+        const deviceId = getDeviceId();
+        // Removed orderBy here because it requires a composite index which causes slow loading/errors
+        const q = query(
+          collection(db, "transactions"),
+          where("device_id", "==", deviceId)
+        );
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            ...d,
+            created_at: d.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+            updated_at: d.updated_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+          } as Transaction;
+        });
+
+        // Sort by date descending locally to avoid the index requirement
+        return data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      } catch (error: any) {
+        console.error("Firestore query error:", error);
+        throw error;
+      }
     },
   });
 }
