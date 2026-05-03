@@ -68,10 +68,18 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       }
     }
 
-    // Special check for "Received from" if note is still empty
-    if (!note && block.toLowerCase().includes("received from")) {
-      const match = block.match(/Received from\s+(.*?)(?=Credit|INR|$)/i);
-      if (match) note = "Received from " + match[1].trim();
+    // Special check for "Received from" or "Credit" if note is still empty
+    if (!note || amount === 0) {
+      const lowerBlock = block.toLowerCase();
+      if (lowerBlock.includes("received") || lowerBlock.includes("credit")) {
+        type = "income";
+        const amtMatch = block.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
+        if (amtMatch) amount = parseFloat(amtMatch[1].replace(/,/g, ''));
+        
+        const nameMatch = block.match(/(?:Received from|Credit from)\s+(.*?)(?=Credit|INR|Transaction|$)/i);
+        if (nameMatch) note = "Income: " + nameMatch[1].trim();
+        else if (!note) note = "Income Received";
+      }
     }
 
     if (amount > 0 && note && note.length > 2 && !note.match(/Amount|Type|Details/i)) {
@@ -86,8 +94,8 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       transactions.push({
         type,
         amount,
-        note: note.split("Transaction")[0].trim(),
-        category: detectCategory(note),
+        note: note.split("Transaction")[0].trim().replace(/\*+/g, '').trim(), // Clean stars
+        category: "Income",
         date: finalDate
       });
     }
@@ -98,16 +106,19 @@ function parseMultipleTransactions(text: string): ScannedData[] {
     const lines = text.split('\n');
     for (const line of lines) {
       const amountMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
-      const noteMatch = line.match(/(?:Paid to|Received from)\s+(.*?)(?=Transaction|Debit|Credit|INR|$)/i);
+      const noteMatch = line.match(/(?:Paid to|Received from|Sent to)\s+(.*?)(?=Transaction|Debit|Credit|INR|$)/i);
       
-      if (amountMatch && noteMatch) {
-        transactions.push({
-          type: line.toLowerCase().includes("received") || line.toLowerCase().includes("credit") ? "income" : "expense",
-          amount: parseFloat(amountMatch[1].replace(/,/g, '')),
-          note: noteMatch[1].trim(),
-          category: detectCategory(noteMatch[1]),
-          date: new Date().toISOString().split('T')[0]
-        });
+      if (amountMatch) {
+        const val = parseFloat(amountMatch[1].replace(/,/g, ''));
+        if (val > 0 && (noteMatch || line.match(/Received|Credit/i))) {
+          transactions.push({
+            type: line.toLowerCase().includes("received") || line.toLowerCase().includes("credit") ? "income" : "expense",
+            amount: val,
+            note: noteMatch ? noteMatch[1].trim() : "Transaction",
+            category: line.toLowerCase().includes("received") ? "Income" : detectCategory(line),
+            date: new Date().toISOString().split('T')[0]
+          });
+        }
       }
     }
   }
