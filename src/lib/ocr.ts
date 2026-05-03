@@ -40,38 +40,39 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // 1. Find Date (Strict: Must be at start of line or near it)
-      const dateMatch = trimmed.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}/i);
+      // 1. Find Date (e.g. Apr 04, 2026)
+      const dateMatch = trimmed.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+202\d/i);
       if (dateMatch) {
         dateStr = dateMatch[0];
-        continue; // Don't use the date line for other info
       }
 
-      // 2. Find Amount (Strict: Must have INR or symbol)
+      // 2. Find Amount (Ignore 2024, 2025, 2026)
       const amountMatch = trimmed.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
       if (amountMatch) {
-        amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-        continue;
+        const val = parseFloat(amountMatch[1].replace(/,/g, ''));
+        if (val !== 2024 && val !== 2025 && val !== 2026) {
+          amount = val;
+        }
       }
 
       // 3. Detect Type
       if (trimmed.toLowerCase().includes("debit")) type = "expense";
       if (trimmed.toLowerCase().includes("credit") || trimmed.toLowerCase().includes("received")) type = "income";
 
-      // 4. Detect Note (Paid to / Received from)
-      if (trimmed.match(/^(Paid to|Received from)/i)) {
-        note = trimmed.replace(/^(Paid to|Received from)\s+/i, '').trim();
-      } else if (!note && trimmed.length > 3 && !trimmed.match(/Debit|Credit|INR|202\d/i)) {
+      // 4. Detect Note (Paid to / Received from / Merchant Name)
+      const noteMatch = trimmed.match(/(?:Paid to|Received from)\s+(.*?)(?=Debit|Credit|INR|Transaction|$)/i);
+      if (noteMatch) {
+        note = noteMatch[1].trim();
+      } else if (!note && trimmed.length > 5 && !trimmed.match(/Debit|Credit|INR|202\d|Date|Transaction/i)) {
         note = trimmed;
       }
     }
 
-    // Only add if we have both a valid amount and a note
-    if (amount > 0 && note && note.length > 2 && note !== "Amount" && note !== "Type") {
+    if (amount > 0 && note && note.length > 2 && !note.match(/Amount|Type|Details/i)) {
       let finalDate = new Date().toISOString().split('T')[0];
       if (dateStr) {
         try {
-          const d = new Date(dateStr);
+          const d = new Date(dateStr.replace(',', ''));
           if (!isNaN(d.getTime())) finalDate = d.toISOString().split('T')[0];
         } catch (e) {}
       }
