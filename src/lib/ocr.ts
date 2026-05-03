@@ -21,9 +21,13 @@ export async function scanReceipt(file: File): Promise<ScannedData[]> {
 function parseMultipleTransactions(text: string): ScannedData[] {
   const transactions: ScannedData[] = [];
   
-  // Clean up the text: remove noisy ID lines to avoid confusion
+  // Clean up the text: remove noisy ID lines to avoid confusion, but KEEP lines with amounts
   const cleanText = text.split('\n')
-    .filter(line => !line.match(/Transaction ID|UTR No|Debited from|Credited to|Page \d+/i))
+    .filter(line => {
+      const hasAmount = line.match(/(?:INR|₹|Rs)\s*[\d,]+\.?\d{0,2}/i);
+      if (hasAmount) return true;
+      return !line.match(/Transaction ID|UTR No|Debited from|Credited to|Page \d+|Debited \d+/i);
+    })
     .join('\n');
 
   // Split by the horizontal lines (often seen as dashes or long spaces) or by Dates

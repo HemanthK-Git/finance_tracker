@@ -29,12 +29,6 @@ export default function AddTransaction() {
       const results = await scanReceipt(file);
       setScannedResults(results);
       
-      // Update debug text with what was seen
-      const worker = await createWorker('eng');
-      const { data: { text } } = await worker.recognize(file);
-      await worker.terminate();
-      setDebugText(text);
-
       if (results.length > 1) {
         toast.success(`Found ${results.length} transactions!`);
       } else if (results.length === 1) {
