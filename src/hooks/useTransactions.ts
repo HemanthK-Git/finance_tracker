@@ -1,5 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/firebase";
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy,
+  Timestamp,
+  serverTimestamp
+} from "firebase/firestore";
 import { getDeviceId } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -11,8 +24,8 @@ export type Transaction = {
   category: string;
   date: string;
   note: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: any;
+  updated_at: any;
 };
 
 export type TransactionInput = {
@@ -30,14 +43,17 @@ export function useTransactions() {
     queryKey: KEY,
     queryFn: async () => {
       const deviceId = getDeviceId();
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("device_id", deviceId)
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Transaction[];
+      const q = query(
+        collection(db, "transactions"),
+        where("device_id", "==", deviceId),
+        orderBy("date", "desc")
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore timestamps to string if needed, or keep as is
+      })) as Transaction[];
     },
   });
 }
@@ -48,24 +64,28 @@ export function useUpsertTransaction() {
     mutationFn: async ({ id, input }: { id?: string; input: TransactionInput }) => {
       const deviceId = getDeviceId();
       if (id) {
-        const { error } = await supabase
-          .from("transactions")
-          .update({ ...input })
-          .eq("id", id)
-          .eq("device_id", deviceId);
-        if (error) throw error;
+        const docRef = doc(db, "transactions", id);
+        await updateDoc(docRef, { 
+          ...input, 
+          updated_at: serverTimestamp() 
+        });
       } else {
-        const { error } = await supabase
-          .from("transactions")
-          .insert({ ...input, device_id: deviceId });
-        if (error) throw error;
+        await addDoc(collection(db, "transactions"), {
+          ...input,
+          device_id: deviceId,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp()
+        });
       }
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: KEY });
       toast.success(vars.id ? "Transaction updated" : "Transaction added");
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+    onError: (e: any) => {
+      console.error(e);
+      toast.error(e.message ?? "Failed to save");
+    },
   });
 }
 
@@ -73,8 +93,7 @@ export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("transactions").delete().eq("id", id);
-      if (error) throw error;
+      await deleteDoc(doc(db, "transactions", id));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY });
