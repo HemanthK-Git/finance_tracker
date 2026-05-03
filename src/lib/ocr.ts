@@ -22,60 +22,39 @@ function parseMultipleTransactions(text: string): ScannedData[] {
   const transactions: ScannedData[] = [];
   if (!text) return [];
 
-  // Remove lines that are ONLY bank metadata, but keep lines with amounts
-  const lines = text.split('\n').filter(l => {
-    const trimmed = l.trim();
-    if (trimmed.match(/(?:INR|₹|Rs)\s*[\d,]+\.\d{2}/i)) return true; // Keep amounts
-    return !trimmed.match(/UTR No|Debited from|Credited to|Page \d+|Debited \d+/i);
-  });
+  // Extract ALL possible dates, notes, and amounts from the entire text
+  const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+202\d/gi;
+  const amountPattern = /(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/gi;
+  const notePattern = /(?:Paid to|Received from|Sent to|Credit from|From)\s+(.*?)(?=Debit|Credit|INR|Transaction|UTR|ID\s*:|\d{2}:\d{2}|$)/gi;
 
-  // Rejoin and split by Date markers
-  const cleanText = lines.join('\n');
-  const blocks = cleanText.split(/(?=Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+  const allDates = text.match(datePattern) || [];
+  const allAmounts: number[] = [];
+  let m;
+  while ((m = amountPattern.exec(text)) !== null) {
+    const val = parseFloat(m[1].replace(/,/g, ''));
+    if (val !== 2024 && val !== 2025 && val !== 2026) allAmounts.push(val);
+  }
   
-  for (const block of blocks) {
-    const blockLines = block.split('\n').map(l => l.trim()).filter(Boolean);
-    if (blockLines.length === 0) continue;
+  const allNotes: {text: string, type: "income" | "expense"}[] = [];
+  while ((m = notePattern.exec(text)) !== null) {
+    const fullLine = m[0].toLowerCase();
+    const isInc = fullLine.includes("received") || fullLine.includes("credit") || fullLine.includes("from");
+    allNotes.push({
+      text: m[1].trim().replace(/\s+\d{1,2}:\d{2}.*$/i, '').replace(/\*+/g, '').trim(),
+      type: isInc ? "income" : "expense"
+    });
+  }
 
-    let dateStr = "";
-    let note = "";
-    let amount = 0;
-    let type: "income" | "expense" = "expense";
+  // ZIP LOGIC: If we have a clear set of matches, pair them up
+  // We prioritize the count that is most frequent (usually names or amounts)
+  const count = Math.max(allDates.length, allAmounts.length, allNotes.length);
+  
+  for (let i = 0; i < count; i++) {
+    const amount = allAmounts[i];
+    const noteObj = allNotes[i];
+    const dateStr = allDates[i];
 
-    // First pass: find basic info
-    for (const line of blockLines) {
-      // Date detection
-      const dateMatch = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+202\d/i);
-      if (dateMatch) dateStr = dateMatch[0];
-
-      // Amount detection (Strict decimal)
-      const amountMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
-      if (amountMatch) {
-        const val = parseFloat(amountMatch[1].replace(/,/g, ''));
-        if (val !== 2024 && val !== 2025 && val !== 2026) amount = val;
-      }
-
-      // Type detection
-      if (line.toLowerCase().includes("debit")) type = "expense";
-      if (line.toLowerCase().includes("credit") || line.toLowerCase().includes("received")) type = "income";
-    }
-
-    // Second pass: find Note/Merchant
-    for (const line of blockLines) {
-      const noteMatch = line.match(/(?:Paid to|Received from|Sent to|Credit from)\s+(.*?)(?=Debit|Credit|INR|Transaction|10:|0\d:|1\d:|$)/i);
-      if (noteMatch) {
-        note = noteMatch[1].trim();
-        if (line.toLowerCase().includes("received")) type = "income";
-        break;
-      }
-    }
-
-    // Fallback for note if still empty
-    if (!note && blockLines.length > 1) {
-      note = blockLines.find(l => l.length > 5 && !l.match(/202\d|INR|₹|Rs/i)) || blockLines[0];
-    }
-
-    if (amount > 0 && note && note.length > 1 && !note.match(/Amount|Type|Details/i)) {
+    if (amount && (noteObj || dateStr)) {
       let finalDate = new Date().toISOString().split('T')[0];
       if (dateStr) {
         try {
@@ -85,18 +64,19 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       }
 
       transactions.push({
-        type,
+        type: noteObj?.type || "expense",
         amount,
-        note: note.split("Transaction")[0].trim().replace(/\*+/g, '').trim(),
-        category: type === "income" ? "Income" : detectCategory(note),
+        note: noteObj?.text || "Transaction",
+        category: noteObj?.type === "income" ? "Income" : detectCategory(noteObj?.text || ""),
         date: finalDate
       });
     }
   }
 
-  // Final Safety Check: If no blocks worked, try line-by-line fallback
+  // Fallback: If zipping failed to produce results, try the old line-by-line
   if (transactions.length === 0) {
-    for (const line of text.split('\n')) {
+    const lines = text.split('\n');
+    for (const line of lines) {
       const amtMatch = line.match(/(?:INR|₹|Rs)\s*([\d,]+\.\d{2})/i);
       if (amtMatch) {
         const val = parseFloat(amtMatch[1].replace(/,/g, ''));
