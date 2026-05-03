@@ -126,7 +126,9 @@ export default function AddTransaction() {
             {scannedResults.map((res, idx) => (
               <li key={idx} className="py-3 flex justify-between items-center text-sm">
                 <span className="font-medium truncate max-w-[180px]">{res.note}</span>
-                <span className="font-mono font-bold text-expense">₹{res.amount}</span>
+                <span className={`font-mono font-bold ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                  {res.type === 'income' ? '+' : '-'}₹{res.amount}
+                </span>
               </li>
             ))}
           </ul>

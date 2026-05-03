@@ -62,10 +62,10 @@ function parseMultipleTransactions(text: string): ScannedData[] {
 
     // Second pass: find Note/Merchant
     for (const line of blockLines) {
-      const noteMatch = line.match(/(?:Paid to|Received from|Sent to|Credit from)\s+(.*?)(?=Debit|Credit|INR|Transaction|10:|0\d:|1\d:|$)/i);
+      const noteMatch = line.match(/(?:Paid to|Received from|Sent to|Credit from|From)\s+(.*?)(?=Debit|Credit|INR|Transaction|10:|0\d:|1\d:|$)/i);
       if (noteMatch) {
         note = noteMatch[1].trim();
-        if (line.toLowerCase().includes("received")) type = "income";
+        if (line.toLowerCase().includes("received") || line.toLowerCase().includes("from")) type = "income";
         break;
       }
     }
