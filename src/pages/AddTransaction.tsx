@@ -90,14 +90,6 @@ export default function AddTransaction() {
     }
   };
 
-  const removeScannedItem = (index: number) => {
-    setScannedResults(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateScannedItem = (index: number, updates: Partial<ScannedData>) => {
-    setScannedResults(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
-  };
-
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-20">
       <div className="flex items-center justify-between">
@@ -113,7 +105,7 @@ export default function AddTransaction() {
           </div>
           <div>
             <h2 className="font-semibold text-sm">Bulk AI Scanner</h2>
-            <p className="text-xs text-muted-foreground">Upload a PhonePe history image to add all at once</p>
+            <p className="text-xs text-muted-foreground">Upload a history list to add everything at once</p>
           </div>
           <input 
             type="file" 
@@ -126,95 +118,26 @@ export default function AddTransaction() {
       )}
 
       {scannedResults.length > 1 && (
-        <div className="rounded-2xl border bg-card/60 backdrop-blur-xl p-6 shadow-elegant animate-in zoom-in-95 duration-500 border-white/20 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 gradient-primary opacity-50" />
-          
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display font-bold text-xl flex items-center gap-2">
-              <Scan className="h-5 w-5 text-primary" /> Review {scannedResults.length} Items
-            </h2>
-            <Button variant="outline" size="sm" onClick={() => setScannedResults([])} className="h-8 text-xs">
-              Clear All
+        <div className="rounded-2xl border bg-card p-5 shadow-elegant animate-in slide-in-from-top-4 duration-500">
+          <h2 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
+            <Scan className="h-5 w-5 text-primary" /> Review {scannedResults.length} Transactions
+          </h2>
+          <ul className="divide-y mb-6">
+            {scannedResults.map((res, idx) => (
+              <li key={idx} className="py-3 flex justify-between items-center text-sm">
+                <span className="font-medium truncate max-w-[180px]">{res.note}</span>
+                <span className="font-mono font-bold text-expense">₹{res.amount}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-3">
+            <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
+              Add All {scannedResults.length} Transactions
+            </Button>
+            <Button variant="outline" onClick={() => setScannedResults([])} className="h-12 px-6">
+              Clear
             </Button>
           </div>
-
-          <div className="space-y-3 mb-6">
-            {scannedResults.map((res, idx) => (
-              <div 
-                key={idx} 
-                className="group p-3 rounded-xl border bg-background/50 hover:bg-background/80 transition-smooth flex flex-col gap-2 animate-in slide-in-from-right-4 duration-300"
-                style={{ animationDelay: `${idx * 100}ms` }}
-              >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <input 
-                      type="text"
-                      value={res.note}
-                      onChange={(e) => updateScannedItem(idx, { note: e.target.value })}
-                      className="bg-transparent border-none p-0 font-medium text-sm w-full focus:ring-0 focus:outline-none"
-                    />
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                        {res.category}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground italic">
-                        {res.date}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={() => updateScannedItem(idx, { type: res.type === 'income' ? 'expense' : 'income' })}
-                        className={`text-xs font-bold px-2 py-1 rounded-md transition-colors ${
-                          res.type === 'income' 
-                            ? 'bg-income/10 text-income' 
-                            : 'bg-expense/10 text-expense'
-                        }`}
-                      >
-                        {res.type === 'income' ? '+' : '-'}₹
-                      </button>
-                      <input 
-                        type="number"
-                        value={res.amount}
-                        onChange={(e) => updateScannedItem(idx, { amount: parseFloat(e.target.value) || 0 })}
-                        className={`bg-transparent border-none p-0 font-mono font-bold text-base w-16 text-right focus:ring-0 focus:outline-none ${
-                          res.type === 'income' ? 'text-income' : 'text-expense'
-                        }`}
-                      />
-                    </div>
-                    <button 
-                      onClick={() => removeScannedItem(idx)}
-                      className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                    >
-                      <Loader2 className="h-3 w-3 rotate-45" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-between items-center px-4 py-3 bg-muted/30 rounded-xl mb-6 border border-white/10">
-            <div className="text-xs text-muted-foreground">
-              Total: <span className="text-foreground font-bold">{scannedResults.length} items</span>
-            </div>
-            <div className="flex gap-4 text-sm font-bold">
-              <span className="text-income">
-                +₹{scannedResults.filter(r => r.type === 'income').reduce((acc, curr) => acc + (curr.amount || 0), 0)}
-              </span>
-              <span className="text-expense">
-                -₹{scannedResults.filter(r => r.type === 'expense').reduce((acc, curr) => acc + (curr.amount || 0), 0)}
-              </span>
-            </div>
-          </div>
-
-          <Button 
-            onClick={handleBulkAdd} 
-            className="w-full h-14 rounded-xl gradient-primary text-primary-foreground font-bold text-lg shadow-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-          >
-            Add All Transactions
-          </Button>
         </div>
       )}
 
