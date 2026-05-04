@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TransactionForm } from "@/components/TransactionForm";
 import { useTransactions, useUpsertTransaction } from "@/hooks/useTransactions";
-import { ArrowLeft, Scan, Loader2, FileImage } from "lucide-react";
+import { ArrowLeft, Scan, Loader2, FileImage, FileSpreadsheet, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scanReceipt, parseMultipleTransactions, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
@@ -160,7 +160,7 @@ export default function AddTransaction() {
           <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <FileImage className="h-4 w-4" />
+                <ClipboardPaste className="h-4 w-4" />
               </div>
               <div>
                 <h3 className="text-sm font-bold tracking-tight">Smart Paste</h3>
@@ -176,7 +176,7 @@ export default function AddTransaction() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <FileImage className="h-4 w-4" />
+                <ClipboardPaste className="h-4 w-4" />
               </div>
               <div>
                 <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
