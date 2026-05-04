@@ -90,29 +90,24 @@ export default function AddTransaction() {
         }
 
         const results: ScannedData[] = data.map((row: any) => {
-          // Intelligent column mapping
-          const findVal = (keys: string[]) => {
-            const key = Object.keys(row).find(k => keys.some(s => k.toLowerCase().includes(s)));
-            return key ? row[key] : null;
-          };
+          // Exact match for the user's specific headers
+          const dateStr = String(row['Date, Time, Year'] || row['date'] || "");
+          const person = String(row['Person (Sent/Received)'] || row['person'] || "Transaction");
+          const amountStr = String(row['Amount (INR)'] || row['amount'] || "0");
+          const amount = parseFloat(amountStr.replace(/[^\d.-]/g, ''));
 
-          const amount = parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit', 'inr']) || 0).replace(/[^\d.-]/g, ''));
-          const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction");
-          const dateStr = String(findVal(['date', 'time', 'day', 'year']) || "");
-          const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
-          
-          // Determine type based on amount sign or separate column
-          let type: "income" | "expense" = amount > 0 ? "income" : "expense";
-          const typeVal = String(findVal(['type', 'direction', 'dr/cr']) || "").toLowerCase();
-          if (typeVal.includes('cr') || typeVal.includes('in') || typeVal.includes('credit')) type = "income";
-          if (typeVal.includes('dr') || typeVal.includes('out') || typeVal.includes('debit')) type = "expense";
+          // Smart type detection
+          let type: "income" | "expense" = "expense";
+          if (person.match(/\d{4}/) || person.toLowerCase().includes('received') || amountStr.includes('+')) {
+            type = "income";
+          }
 
           return {
             amount: Math.abs(amount),
             type,
-            note: note.trim(),
-            date: dateStr.includes('-') || dateStr.includes('/') ? dateStr : new Date().toISOString().split('T')[0],
-            transactionId: ref.trim(),
+            note: person.trim(),
+            date: dateStr.includes('20') ? formatDate(dateStr) : new Date().toISOString().split('T')[0],
+            transactionId: "",
             source: file.name.substring(0, 15)
           };
         });
@@ -138,93 +133,20 @@ export default function AddTransaction() {
 
 
       {!editId && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors overflow-hidden">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
-                <FileSpreadsheet className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Excel / CSV</h3>
-                <p className="text-[10px] text-muted-foreground">Upload statement document</p>
-              </div>
-            </div>
-            <input 
-              type="file" 
-              accept=".xlsx,.xls,.csv" 
-              onChange={handleExcelUpload} 
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
+        <div className="rounded-2xl border bg-card p-8 shadow-elegant text-center space-y-4 animate-in fade-in zoom-in-95 duration-500 border-dashed hover:bg-accent/5 transition-all relative overflow-hidden group">
+          <div className="h-16 w-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-600 mx-auto group-hover:scale-110 transition-transform">
+            <FileSpreadsheet className="h-8 w-8" />
           </div>
-
-          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <FileImage className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Smart Paste</h3>
-                <p className="text-[10px] text-muted-foreground">Paste copied text history</p>
-              </div>
-            </div>
+          <div>
+            <h3 className="text-lg font-bold tracking-tight">Import Excel or CSV</h3>
+            <p className="text-sm text-muted-foreground max-w-[240px] mx-auto mt-1">Upload your bank statement document to sync your history</p>
           </div>
-        </div>
-      )}
-
-      {!editId && (
-        <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <FileImage className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
-                <p className="text-[10px] text-muted-foreground">Paste history text from your bank</p>
-              </div>
-            </div>
-            {scannedResults.length > 0 && (
-              <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
-                {scannedResults.length} Items Found
-              </div>
-            )}
-          </div>
-
-          <div className="relative group">
-            <textarea
-              placeholder="Paste your bank statement text here... (e.g. Apr 04, Paid to Pankaj, INR 20.00)"
-              className="w-full h-40 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
-              id="manual-text-import"
-              onChange={(e) => {
-                const text = e.target.value;
-                if (text.length > 30) {
-                  const results = parseMultipleTransactions(text);
-                  setScannedResults(results);
-                  if (results.length > 0) {
-                    setDebugText(`Smart parser identified ${results.length} transactions from your text.`);
-                  }
-                }
-              }}
-            />
-            <div className="absolute bottom-3 right-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 text-[10px] bg-background/80 backdrop-blur-sm"
-                onClick={() => {
-                  const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
-                  if (el) el.value = '';
-                  setScannedResults([]);
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
-            <Scan className="h-3 w-3" />
-            <span>AI will automatically detect Dates, Amounts, and Names from your pasted text.</span>
-          </div>
+          <input 
+            type="file" 
+            accept=".xlsx,.xls,.csv" 
+            onChange={handleExcelUpload} 
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
         </div>
       )}
 
