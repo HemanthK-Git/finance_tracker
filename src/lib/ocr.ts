@@ -156,9 +156,9 @@ function formatDate(raw: string): string {
 
 function formatTime(raw: string): string {
   if (!raw) return "";
-  // Handle cases where AM/PM might be misread as "es", "on", "N"
-  const cleanRaw = raw.replace(/es on N/gi, 'AM'); 
-  const match = cleanRaw.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?/i);
+  // Handle cases where AM/PM might be misread or spaces added
+  const cleanRaw = raw.replace(/es on N/gi, 'AM').replace(/\s+/g, ' '); 
+  const match = cleanRaw.match(/(\d{1,2})\s*[:\.]\s*(\d{2})\s*(AM|PM|am|pm)?/i);
   if (!match) return "";
   let [_, hours, mins, ampm] = match;
   let h = parseInt(hours);
@@ -170,6 +170,8 @@ function formatTime(raw: string): string {
 function cleanNote(note: string): string {
   return note
     .replace(/[)("“'‘*]/g, '')
+    // Remove redundant amounts and currency symbols from the note
+    .replace(/(?:INR|₹|Rs|inr|rs|rs\.)\s*[:\-\s]*\s*[\d,]+\.?\d{0,2}/gi, '')
     .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit|Debt|from|to|Paid|Received|Sent|Transfer)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || "Transaction";
