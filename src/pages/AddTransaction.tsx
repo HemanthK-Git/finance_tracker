@@ -19,33 +19,6 @@ export default function AddTransaction() {
   const [scannedResults, setScannedResults] = useState<ScannedData[]>([]);
   const [debugText, setDebugText] = useState<string>("");
 
-  const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setScanning(true);
-    setDebugText("Scanning... Please wait.");
-    try {
-      const results = await scanReceipt(file);
-      setScannedResults(results);
-      
-      // We'll set the debug text from the scanReceipt if possible, 
-      // otherwise just a success message
-      setDebugText(`Scan complete! Found ${results.length} items.`);
-
-      if (results.length > 0) {
-        toast.success(`Found ${results.length} transactions!`);
-      } else {
-        toast.info("Could not find any clear transactions.");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to scan. Try a clearer photo.");
-    } finally {
-      setScanning(false);
-    }
-  };
-
   const { data: transactions = [] } = useTransactions();
 
   const handleBulkAdd = async () => {
@@ -101,33 +74,6 @@ export default function AddTransaction() {
         </Button>
       </div>
 
-      {!editId && (
-        <div className="rounded-2xl border bg-accent/30 p-5 flex flex-col items-center justify-center text-center space-y-3 relative overflow-hidden group hover:bg-accent/40 transition-smooth border-dashed border-accent">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            {scanning ? <Loader2 className="h-5 w-5 animate-spin" /> : <Scan className="h-5 w-5" />}
-          </div>
-          <div>
-            <h2 className="font-semibold text-sm">Bulk AI Scanner</h2>
-            <p className="text-xs text-muted-foreground">Upload a history list to add everything at once</p>
-          </div>
-          <input 
-            type="file" 
-            accept="image/*,application/pdf" 
-            onChange={handleScan} 
-            className="absolute inset-0 opacity-0 cursor-pointer"
-            disabled={scanning}
-          />
-        </div>
-      )}
-
-      {!editId && (
-        <div className="relative">
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
-            <div className="bg-background px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">OR</div>
-          </div>
-          <div className="h-px bg-border w-full my-8" />
-        </div>
-      )}
 
       {!editId && (
         <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
