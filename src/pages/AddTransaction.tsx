@@ -32,7 +32,7 @@ export default function AddTransaction() {
         const isDuplicate = transactions?.some(t => 
           (res.transactionId && t.note?.includes(res.transactionId)) ||
           (t.amount === (res.amount || 0) && 
-           t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
+           t.note?.toLowerCase().trim().includes((res.note || "").toLowerCase().trim()) && 
            t.date === (res.date || new Date().toISOString().split('T')[0]))
         );
 
@@ -47,7 +47,7 @@ export default function AddTransaction() {
             amount: res.amount || 0,
             category: res.category || "Other",
             date: res.date || new Date().toISOString().split('T')[0],
-            note: res.transactionId ? `${res.note} (ID: ${res.transactionId})` : (res.note || "Bulk Scanned"),
+            note: `${res.note} ${res.transactionId ? `(ID: ${res.transactionId})` : ''} [${res.source || 'Imported'}]`.trim(),
           }
         });
         addedCount++;
@@ -172,6 +172,11 @@ export default function AddTransaction() {
                             <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
                               {res.type}
                             </div>
+                            {res.source && (
+                              <span className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 font-medium">
+                                {res.source}
+                              </span>
+                            )}
                             {isDuplicate && (
                               <span className="text-[9px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded font-bold border border-orange-500/20 animate-pulse">
                                 ⚠️ ALREADY IN HISTORY

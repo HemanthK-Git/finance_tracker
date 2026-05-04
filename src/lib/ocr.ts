@@ -8,6 +8,7 @@ export type ScannedData = {
   category?: string;
   note?: string;
   transactionId?: string;
+  source?: string;
 };
 
 export async function scanReceipt(file: File): Promise<ScannedData[]> {
@@ -100,7 +101,8 @@ export function parseMultipleTransactions(text: string): ScannedData[] {
       time: formatTime(time),
       note: cleanNote(note),
       transactionId: transactionId.replace(/(?:Transaction ID|ID)\s*[:\-]\s*/i, '').trim(),
-      category: type === "income" ? "Income" : detectCategory(note)
+      category: type === "income" ? "Income" : detectCategory(note),
+      source: detectSource(text)
     });
   });
 
@@ -152,6 +154,19 @@ function findNearbyNote(lines: string[], startIdx: number): string {
     }
   }
   return "Transaction";
+}
+
+function detectSource(text: string): string {
+  const low = text.toLowerCase();
+  if (low.includes('phonepe')) return 'PhonePe';
+  if (low.includes('google pay') || low.includes('gpay')) return 'GPay';
+  if (low.includes('paytm')) return 'Paytm';
+  if (low.includes('sbi') || low.includes('state bank')) return 'SBI';
+  if (low.includes('hdfc')) return 'HDFC';
+  if (low.includes('icici')) return 'ICICI';
+  if (low.includes('axis')) return 'Axis';
+  if (low.includes('axis')) return 'Axis';
+  return 'Bank Statement';
 }
 
 function formatDate(raw: string): string {
