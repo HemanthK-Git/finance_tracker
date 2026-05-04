@@ -144,39 +144,28 @@ export default function AddTransaction() {
 
 
       {!editId && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors overflow-hidden">
+      {!editId && (
+        <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-colors overflow-hidden">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
                 <FileSpreadsheet className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold tracking-tight">Excel / CSV</h3>
-                <p className="text-[10px] text-muted-foreground">Upload statement document</p>
+                <h3 className="text-sm font-bold tracking-tight">Excel / CSV Document</h3>
+                <p className="text-[10px] text-muted-foreground">Upload your bank statement (.xlsx, .csv)</p>
               </div>
             </div>
-            <input 
-              type="file" 
-              accept=".xlsx,.xls,.csv" 
-              onChange={handleExcelUpload} 
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-          </div>
-
-          <div 
-            className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors cursor-pointer"
-            onClick={() => document.getElementById('manual-text-import')?.focus()}
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <ClipboardPaste className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Smart Paste</h3>
-                <p className="text-[10px] text-muted-foreground">Paste copied text history</p>
-              </div>
+            <div className="bg-green-500/5 text-green-600 text-[10px] font-bold px-2 py-1 rounded-full">
+              Bulk Import Ready
             </div>
           </div>
+          <input 
+            type="file" 
+            accept=".xlsx,.xls,.csv" 
+            onChange={handleExcelUpload} 
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
         </div>
       )}
 
