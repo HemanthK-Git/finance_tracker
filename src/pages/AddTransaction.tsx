@@ -163,7 +163,10 @@ export default function AddTransaction() {
             />
           </div>
 
-          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors">
+          <div 
+            className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors cursor-pointer"
+            onClick={() => document.getElementById('manual-text-import')?.focus()}
+          >
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                 <ClipboardPaste className="h-4 w-4" />
