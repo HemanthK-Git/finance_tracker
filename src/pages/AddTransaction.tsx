@@ -16,7 +16,7 @@ export default function AddTransaction() {
   const initial = editId ? txns.find((t) => t.id === editId) ?? null : null;
   const navigate = useNavigate();
   const upsert = useUpsertTransaction();
-  
+
   const [scanning, setScanning] = useState(false);
   const [scannedResults, setScannedResults] = useState<ScannedData[]>([]);
   const [debugText, setDebugText] = useState<string>("");
@@ -29,16 +29,25 @@ export default function AddTransaction() {
     let skippedCount = 0;
 
     try {
+      const latestTransactions = transactions || [];
+      
       for (const res of scannedResults) {
-        // Check for duplicates (same amount, note, and date)
-        const isDuplicate = transactions?.some(t => 
-          (res.transactionId && t.note?.includes(res.transactionId) && t.type === res.type && (t.time === res.time || !t.time)) ||
-          (t.amount === (res.amount || 0) && 
-           t.type === res.type &&
-           t.time === res.time &&
-           t.note?.toLowerCase().trim().includes((res.note || "").toLowerCase().trim()) && 
-           t.date === (res.date || new Date().toISOString().split('T')[0]))
-        );
+        const isDuplicate = latestTransactions.some(t => {
+          // 1. Primary Check: Transaction ID + Type + Time
+          if (res.transactionId && t.note?.includes(res.transactionId)) {
+            // Only a duplicate if the ID, Type, AND Time match exactly
+            return t.type === res.type && (t.time === res.time || !t.time || !res.time);
+          }
+          
+          // 2. Secondary Check: Amount + Date + Note + Time (Fallback if no ID)
+          const amountMatch = t.amount === (res.amount || 0);
+          const dateMatch = t.date === (res.date || new Date().toISOString().split('T')[0]);
+          const timeMatch = t.time === res.time || !t.time || !res.time;
+          const typeMatch = t.type === res.type;
+          const noteMatch = t.note?.toLowerCase().includes((res.note || "").toLowerCase().trim());
+          
+          return amountMatch && dateMatch && timeMatch && typeMatch && noteMatch;
+        });
 
         if (isDuplicate) {
           skippedCount++;
@@ -96,19 +105,22 @@ export default function AddTransaction() {
             return key ? row[key] : null;
           };
 
-          const amount = Math.abs(parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit', 'inr']) || 0).replace(/[^\d.-]/g, '')));
+          // Precise column mapping: Priority search for Amount
+          const amountRaw = findVal(['amount', 'inr', 'value', 'total', 'debit', 'credit']);
+          const amount = Math.abs(parseFloat(String(amountRaw || 0).replace(/[^\d.-]/g, '')));
+          
           const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction").trim();
           const dateRaw = String(findVal(['date', 'time', 'day', 'year']) || "");
           const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
-          
+
           // Use our robust date/time parsers
           const date = formatDate(dateRaw);
-          
+
           // Determine type: Explicitly check for Debit/Credit column
           let type: "income" | "expense" = "expense";
           const typeVal = String(findVal(['type', 'direction', 'dr/cr', 'debit/credit']) || "").toLowerCase();
           const noteLow = note.toLowerCase();
-          
+
           if (typeVal.includes('credit') || typeVal.includes('cr') || typeVal.includes('in') || noteLow.includes('received') || noteLow.includes('credited')) {
             type = "income";
           } else if (typeVal.includes('debit') || typeVal.includes('dr') || typeVal.includes('out')) {
@@ -163,10 +175,10 @@ export default function AddTransaction() {
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Click or Drag File</div>
               <p className="text-[9px] text-muted-foreground">Supports .xlsx, .xls, .csv</p>
             </div>
-            <input 
-              type="file" 
-              accept=".xlsx,.xls,.csv" 
-              onChange={handleExcelUpload} 
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleExcelUpload}
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
           </div>
@@ -204,9 +216,9 @@ export default function AddTransaction() {
                 }}
               />
               <div className="absolute bottom-3 right-3">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="h-6 text-[9px] bg-background/80"
                   onClick={() => {
                     const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
@@ -240,17 +252,17 @@ export default function AddTransaction() {
                 {scannedResults.map((res, idx) => {
                   const dateObj = res.date ? new Date(res.date) : new Date();
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                  
+
                   // Check if this specific item is a duplicate (Match ID + Type + Time)
-                  const isDuplicate = transactions?.some(t => 
+                  const isDuplicate = transactions?.some(t =>
                     (res.transactionId && t.note?.includes(res.transactionId) && t.type === res.type && (t.time === res.time || !t.time)) ||
-                    (t.amount === (res.amount || 0) && 
-                     t.type === res.type &&
-                     t.time === res.time &&
-                     t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
-                     t.date === (res.date || new Date().toISOString().split('T')[0]))
+                    (t.amount === (res.amount || 0) &&
+                      t.type === res.type &&
+                      t.time === res.time &&
+                      t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() &&
+                      t.date === (res.date || new Date().toISOString().split('T')[0]))
                   );
-                  
+
                   return (
                     <tr key={idx} className={`group transition-colors ${isDuplicate ? 'bg-orange-500/5' : 'hover:bg-accent/5'}`}>
                       <td className="py-3 pr-4 align-top">
@@ -292,14 +304,14 @@ export default function AddTransaction() {
             </table>
           </div>
           <div className="flex flex-col gap-3">
-            {scannedResults.some(res => transactions?.some(t => 
+            {scannedResults.some(res => transactions?.some(t =>
               (res.transactionId && t.note?.includes(res.transactionId)) ||
               (t.amount === (res.amount || 0) && t.note === res.note && t.date === res.date)
             )) && (
-              <p className="text-[10px] text-orange-600 font-medium text-center bg-orange-50 p-2 rounded-lg border border-orange-100">
-                Some transactions above are already in your database and will be skipped.
-              </p>
-            )}
+                <p className="text-[10px] text-orange-600 font-medium text-center bg-orange-50 p-2 rounded-lg border border-orange-100">
+                  Some transactions above are already in your database and will be skipped.
+                </p>
+              )}
             <div className="flex gap-3">
               <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
                 Add New Transactions
@@ -323,7 +335,7 @@ export default function AddTransaction() {
         <h1 className="font-display text-2xl sm:text-3xl font-bold mb-1">{editId ? "Edit transaction" : "Add transaction"}</h1>
         <p className="text-muted-foreground text-sm mb-6">{editId ? "Update the details below." : "Record a new income or expense."}</p>
         <TransactionForm
-          key={scannedResults.length === 1 ? Date.now() : "initial"} 
+          key={scannedResults.length === 1 ? Date.now() : "initial"}
           initial={initial}
           scannedData={scannedResults.length === 1 ? scannedResults[0] : null}
           submitting={upsert.isPending}
