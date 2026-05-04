@@ -80,8 +80,12 @@ export function parseMultipleTransactions(text: string): ScannedData[] {
     const note = findNearbyNote(lines, anchor.lineIdx);
     const transactionId = findNearby(lines, anchor.lineIdx, /(?:Transaction ID|ID)\s*[:\-]\s*([A-Z0-9]{15,})/i);
     
-    // Determine type (Income vs Expense)
-    const context = (lines[anchor.lineIdx] + " " + (lines[anchor.lineIdx-1] || "") + " " + (lines[anchor.lineIdx-2] || "") + " " + (lines[anchor.lineIdx+1] || "")).toLowerCase();
+    // Determine type (Income vs Expense) - Narrow context for precision
+    const currentLine = lines[anchor.lineIdx].toLowerCase();
+    const prevLine = (lines[anchor.lineIdx-1] || "").toLowerCase();
+    const prevLine2 = (lines[anchor.lineIdx-2] || "").toLowerCase();
+    const context = `${prevLine2} ${prevLine} ${currentLine}`;
+    
     let type: "income" | "expense" = "expense";
     if (context.includes("received") || context.includes("credit") || context.includes("credited to")) {
       type = "income";
@@ -140,10 +144,11 @@ function findNearbyNote(lines: string[], startIdx: number): string {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
-      if (line.match(/\d{1,2}:\d{2}/) || line.match(datePattern) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited|Account|XX\d+/i) || line.match(/^\d+$/)) continue;
-      
       const clean = line.replace(/(?:Paid|Received|Sent|Transfer|to|from)\s+/gi, '').trim();
-      if (clean.length > 2 && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) return cleanNote(clean);
+      const blacklist = /Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited|Account|XX\d+|\d{4}/i;
+      if (clean.length > 2 && !clean.match(blacklist) && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) {
+        return cleanNote(clean);
+      }
     }
   }
   return "Transaction";
