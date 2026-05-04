@@ -111,13 +111,26 @@ function findNearby(lines: string[], startIdx: number, regex: RegExp): string {
 }
 
 function findNearbyNote(lines: string[], startIdx: number): string {
-  // Search wider for the Merchant/Note
-  for (let offset of [-1, -2, -3, -4, -5, 0]) {
+  const merchantKeywords = /(?:Paid to|Received from|Sent to|Transfer to|Credit from|From)\s+/i;
+  const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(?:20\d{2})?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/i;
+
+  // Pass 1: Look for explicit Merchant keywords (High Priority)
+  for (let offset of [-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, 0]) {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
-      // Skip lines that are just noise or metadata
-      if (line.match(/\d{1,2}:\d{2}/) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited/i) || line.match(/^\d+$/)) continue;
+      if (line.match(merchantKeywords)) {
+        return cleanNote(line.replace(merchantKeywords, ''));
+      }
+    }
+  }
+
+  // Pass 2: Fallback to any text that isn't noise
+  for (let offset of [-1, -2, -3, -4, -5, -6, 0]) {
+    const idx = startIdx + offset;
+    if (idx >= 0 && idx < lines.length) {
+      const line = lines[idx];
+      if (line.match(/\d{1,2}:\d{2}/) || line.match(datePattern) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited/i) || line.match(/^\d+$/)) continue;
       
       const clean = line.replace(/(?:Paid|Received|Sent|Transfer|to|from)\s+/gi, '').trim();
       if (clean.length > 2 && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) return clean;
@@ -129,7 +142,8 @@ function findNearbyNote(lines: string[], startIdx: number): string {
 function formatDate(raw: string): string {
   if (!raw) return new Date().toISOString().split('T')[0];
   try {
-    const d = new Date(raw.replace(/st|nd|rd|th/i, ''));
+    const cleanRaw = raw.replace(/st|nd|rd|th/i, '').replace(/es on N/gi, ''); // Clean OCR time-noise
+    const d = new Date(cleanRaw);
     if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
   } catch(e) {}
   return new Date().toISOString().split('T')[0];
@@ -137,7 +151,9 @@ function formatDate(raw: string): string {
 
 function formatTime(raw: string): string {
   if (!raw) return "";
-  const match = raw.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  // Handle cases where AM/PM might be misread as "es", "on", "N"
+  const cleanRaw = raw.replace(/es on N/gi, 'AM'); 
+  const match = cleanRaw.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?/i);
   if (!match) return "";
   let [_, hours, mins, ampm] = match;
   let h = parseInt(hours);
@@ -149,7 +165,7 @@ function formatTime(raw: string): string {
 function cleanNote(note: string): string {
   return note
     .replace(/[)("“'‘*]/g, '')
-    .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit|Debt|from|to)\b/gi, '')
+    .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit|Debt|from|to|Paid|Received|Sent|Transfer)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || "Transaction";
 }
