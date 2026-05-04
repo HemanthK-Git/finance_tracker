@@ -124,54 +124,40 @@ export default function AddTransaction() {
           <h2 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
             <Scan className="h-5 w-5 text-primary" /> Review {scannedResults.length} Transactions
           </h2>
-          <div className="space-y-4 mb-6">
-            {scannedResults.map((res, idx) => {
-              const dateObj = res.date ? new Date(res.date) : new Date();
-              const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-              
-              return (
-                <div key={idx} className="rounded-xl border border-accent/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                  <table className="w-full border-collapse text-left">
-                    <tbody className="divide-y divide-accent/10">
-                      {/* Row 1: Date, Time, Year */}
-                      <tr className="bg-accent/5">
-                        <td className="px-4 py-2 flex justify-between items-center">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                            {formattedDate}
-                          </span>
-                          <span className="text-[10px] font-mono font-medium text-muted-foreground bg-white/50 px-2 py-0.5 rounded border border-accent/10">
-                            {res.time || "00:00"}
-                          </span>
-                        </td>
-                      </tr>
-                      
-                      {/* Row 2: Name (Received/Given) */}
-                      <tr>
-                        <td className="px-4 py-3">
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-tighter mb-0.5">Transaction Details</div>
-                          <div className="text-sm font-bold text-foreground capitalize tracking-tight">
-                            {res.note || "Transaction"}
-                          </div>
-                        </td>
-                      </tr>
-                      
-                      {/* Row 3: Money */}
-                      <tr className={res.type === 'income' ? 'bg-income/5' : 'bg-expense/5'}>
-                        <td className="px-4 py-2 flex justify-between items-center">
-                          <span className={`text-[9px] font-bold uppercase ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                            {res.type === 'income' ? 'Received Amount' : 'Amount Spent'}
-                          </span>
-                          <span className={`font-mono font-black text-lg ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                            {res.type === 'income' ? '+' : '-'}₹{res.amount}
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
+          <div className="overflow-x-auto -mx-5 px-5 mb-6">
+            <table className="w-full text-left border-collapse border-spacing-0">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-widest text-muted-foreground border-b border-accent/20">
+                  <th className="py-3 pr-4 font-bold">Date / Time</th>
+                  <th className="py-3 pr-4 font-bold">Transaction Details</th>
+                  <th className="py-3 text-right font-bold">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-accent/10">
+                {scannedResults.map((res, idx) => {
+                  const dateObj = res.date ? new Date(res.date) : new Date();
+                  const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                  
+                  return (
+                    <tr key={idx} className="group hover:bg-accent/5 transition-colors">
+                      <td className="py-3 pr-4 align-top">
+                        <div className="text-sm font-medium whitespace-nowrap">{formattedDate}</div>
+                        <div className="text-[10px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
+                      </td>
+                      <td className="py-3 pr-4 align-top">
+                        <div className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">{res.note}</div>
+                        <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                          {res.type}
+                        </div>
+                      </td>
+                      <td className={`py-3 align-top text-right font-mono font-bold text-sm ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                        {res.type === 'income' ? '+' : '-'}₹{res.amount}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
           <div className="flex gap-3">
             <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
