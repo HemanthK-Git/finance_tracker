@@ -30,8 +30,9 @@ export default function AddTransaction() {
       for (const res of scannedResults) {
         // Check for duplicates (same amount, note, and date)
         const isDuplicate = transactions?.some(t => 
-          (res.transactionId && t.note?.includes(res.transactionId)) ||
+          (res.transactionId && t.note?.includes(res.transactionId) && t.type === res.type) ||
           (t.amount === (res.amount || 0) && 
+           t.type === res.type &&
            t.note?.toLowerCase().trim().includes((res.note || "").toLowerCase().trim()) && 
            t.date === (res.date || new Date().toISOString().split('T')[0]))
         );
@@ -151,10 +152,11 @@ export default function AddTransaction() {
                   const dateObj = res.date ? new Date(res.date) : new Date();
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                   
-                  // Check if this specific item is a duplicate
+                  // Check if this specific item is a duplicate (Match ID + Type)
                   const isDuplicate = transactions?.some(t => 
-                    (res.transactionId && t.note?.includes(res.transactionId)) ||
+                    (res.transactionId && t.note?.includes(res.transactionId) && t.type === res.type) ||
                     (t.amount === (res.amount || 0) && 
+                     t.type === res.type &&
                      t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
                      t.date === (res.date || new Date().toISOString().split('T')[0]))
                   );
