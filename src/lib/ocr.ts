@@ -168,11 +168,13 @@ function formatTime(raw: string): string {
 }
 
 function cleanNote(note: string): string {
+  if (!note) return "Transaction";
   return note
     .replace(/[)("“'‘*]/g, '')
-    // Remove redundant amounts and currency symbols from the note
-    .replace(/(?:INR|₹|Rs|inr|rs|rs\.)\s*[:\-\s]*\s*[\d,]+\.?\d{0,2}/gi, '')
-    .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit|Debt|from|to|Paid|Received|Sent|Transfer)\b/gi, '')
+    // Aggressive Amount/Currency Stripping
+    .replace(/(?:INR|₹|Rs|inr|rs|rs\.)\s*[:\-\s]*\s*[\d,]+\s*[\.\,]\s*\d{0,2}/gi, '')
+    .replace(/(?:INR|₹|Rs|inr|rs|rs\.)\s*[:\-\s]*\s*[\d,]+/gi, '')
+    .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit|Debt|from|to|Paid|Received|Sent|Transfer|LL)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || "Transaction";
 }
