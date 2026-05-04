@@ -110,20 +110,28 @@ export default function AddTransaction() {
           const amount = Math.abs(parseFloat(String(amountRaw || 0).replace(/[^\d.-]/g, '')));
           
           const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction").trim();
-          const dateRaw = String(findVal(['date', 'time', 'day', 'year']) || "");
           const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
+          
+          // Stitch Date: Combine "date" and "year" columns if separate
+          const datePart = String(findVal(['date']) || "");
+          const yearPart = String(findVal(['year']) || "");
+          // If year is separate, join it. If date already has the year, keep it.
+          const fullDateStr = datePart.length > 8 ? datePart : `${datePart} ${yearPart}`.trim();
+          const date = formatDate(fullDateStr);
 
-          // Use our robust date/time parsers
-          const date = formatDate(dateRaw);
+          // Extract Time: Strictly look for XX:XX format, otherwise default to "--:--"
+          const timeRaw = String(findVal(['time']) || "").trim();
+          const timeMatch = timeRaw.match(/\d{1,2}:\d{2}(?:\s*[AP]M)?/i);
+          const time = timeMatch ? timeMatch[0] : "--:--";
 
           // Determine type: Explicitly check for Debit/Credit column
           let type: "income" | "expense" = "expense";
-          const typeVal = String(findVal(['type', 'direction', 'dr/cr', 'debit/credit']) || "").toLowerCase();
+          const typeHeader = String(findVal(['type', 'direction', 'dr/cr', 'debit/credit']) || "").toLowerCase();
           const noteLow = note.toLowerCase();
-
-          if (typeVal.includes('credit') || typeVal.includes('cr') || typeVal.includes('in') || noteLow.includes('received') || noteLow.includes('credited')) {
+          
+          if (typeHeader.includes('credit') || typeHeader.includes('cr') || typeHeader.includes('in') || noteLow.includes('received') || noteLow.includes('credited')) {
             type = "income";
-          } else if (typeVal.includes('debit') || typeVal.includes('dr') || typeVal.includes('out')) {
+          } else if (typeHeader.includes('debit') || typeHeader.includes('dr') || typeHeader.includes('out')) {
             type = "expense";
           }
 
@@ -132,7 +140,7 @@ export default function AddTransaction() {
             type,
             note,
             date,
-            time: dateRaw.match(/\d{1,2}:\d{2}\s*(?:AM|PM)/i)?.[0] || "--:--",
+            time: time === "AM" || time === "PM" ? "--:--" : time,
             transactionId: ref.trim(),
             source: file.name.substring(0, 15)
           };
