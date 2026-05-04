@@ -57,7 +57,7 @@ function parseMultipleTransactions(text: string): ScannedData[] {
   // 1. Identify all "Amount" candidates as anchors
   const amountAnchors: { val: number; lineIdx: number; raw: string }[] = [];
   // Regex updated to allow spaces around decimals (Tesseract often adds them)
-  const amtRegex = /(?:INR|₹|Rs|inr|rs|1NR|1nr)?\s*[:\-\s]*\s*([\d,]+\s*[\.\,]\s*\d{2}|[\d,]+\s*[\.\,]\s*\d{1}|[\d,]+)/gi;
+  const amtRegex = /(?:INR|₹|Rs|inr|rs|1NR|1nr)\s*[:\-\s]*\s*([\d,]+\s*[\.\,]\s*\d{2}|[\d,]+\s*[\.\,]\s*\d{1}|[\d,]+)/gi;
 
   lines.forEach((line, idx) => {
     let match;
@@ -147,7 +147,13 @@ function findNearbyNote(lines: string[], startIdx: number): string {
 function formatDate(raw: string): string {
   if (!raw) return new Date().toISOString().split('T')[0];
   try {
-    const cleanRaw = raw.replace(/st|nd|rd|th/i, '').replace(/es on N/gi, ''); // Clean OCR time-noise
+    // Clean common OCR artifacts from dates
+    const cleanRaw = raw
+      .replace(/st|nd|rd|th/i, '')
+      .replace(/es on N/gi, '')
+      .replace(/[|]/g, '')
+      .trim();
+      
     const d = new Date(cleanRaw);
     if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
   } catch(e) {}
