@@ -147,84 +147,77 @@ export default function AddTransaction() {
 
 
       {!editId && (
-      {!editId && (
-        <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-colors overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
-                <FileSpreadsheet className="h-4 w-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* LEFT: Excel Upload */}
+          <div className="rounded-2xl border bg-card p-6 space-y-4 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-smooth flex flex-col justify-center">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-600">
+                <FileSpreadsheet className="h-5 w-5" />
               </div>
               <div>
                 <h3 className="text-sm font-bold tracking-tight">Excel / CSV Document</h3>
-                <p className="text-[10px] text-muted-foreground">Upload your bank statement (.xlsx, .csv)</p>
+                <p className="text-[10px] text-muted-foreground">Upload statement history</p>
               </div>
             </div>
-            <div className="bg-green-500/5 text-green-600 text-[10px] font-bold px-2 py-1 rounded-full">
-              Bulk Import Ready
+            <div className="border-2 border-dashed border-accent/30 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2 group-hover:border-green-500/30 transition-colors">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Click or Drag File</div>
+              <p className="text-[9px] text-muted-foreground">Supports .xlsx, .xls, .csv</p>
             </div>
-          </div>
-          <input 
-            type="file" 
-            accept=".xlsx,.xls,.csv" 
-            onChange={handleExcelUpload} 
-            className="absolute inset-0 opacity-0 cursor-pointer"
-          />
-        </div>
-      )}
-
-      {!editId && (
-        <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <ClipboardPaste className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
-                <p className="text-[10px] text-muted-foreground">Paste history text from your bank</p>
-              </div>
-            </div>
-            {scannedResults.length > 0 && (
-              <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
-                {scannedResults.length} Items Found
-              </div>
-            )}
-          </div>
-
-          <div className="relative group">
-            <textarea
-              placeholder="Paste your bank statement text here... (e.g. Apr 04, Paid to Pankaj, INR 20.00)"
-              className="w-full h-40 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
-              id="manual-text-import"
-              onChange={(e) => {
-                const text = e.target.value;
-                if (text.length > 30) {
-                  const results = parseMultipleTransactions(text);
-                  setScannedResults(results);
-                  if (results.length > 0) {
-                    setDebugText(`Smart parser identified ${results.length} transactions from your text.`);
-                  }
-                }
-              }}
+            <input 
+              type="file" 
+              accept=".xlsx,.xls,.csv" 
+              onChange={handleExcelUpload} 
+              className="absolute inset-0 opacity-0 cursor-pointer"
             />
-            <div className="absolute bottom-3 right-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 text-[10px] bg-background/80 backdrop-blur-sm"
-                onClick={() => {
-                  const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
-                  if (el) el.value = '';
-                  setScannedResults([]);
-                }}
-              >
-                Clear
-              </Button>
-            </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
-            <Scan className="h-3 w-3" />
-            <span>AI will automatically detect Dates, Amounts, and Names from your pasted text.</span>
+
+          {/* RIGHT: Smart Text Import */}
+          <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <ClipboardPaste className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
+                  <p className="text-[10px] text-muted-foreground">Paste history text from bank</p>
+                </div>
+              </div>
+              {scannedResults.length > 0 && (
+                <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
+                  {scannedResults.length} Items
+                </div>
+              )}
+            </div>
+
+            <div className="relative group">
+              <textarea
+                placeholder="Paste here... (e.g. Apr 04, Paid to Munish, INR 10.00)"
+                className="w-full h-32 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
+                id="manual-text-import"
+                onChange={(e) => {
+                  const text = e.target.value;
+                  if (text.length > 20) {
+                    const results = parseMultipleTransactions(text);
+                    setScannedResults(results);
+                  }
+                }}
+              />
+              <div className="absolute bottom-3 right-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-6 text-[9px] bg-background/80"
+                  onClick={() => {
+                    const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
+                    if (el) el.value = '';
+                    setScannedResults([]);
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
