@@ -174,6 +174,11 @@ export default function AddTransaction() {
                             <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
                               {res.type}
                             </div>
+                            {res.transactionId && (
+                              <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">
+                                ID: {res.transactionId}
+                              </span>
+                            )}
                             {res.source && (
                               <span className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 font-medium">
                                 {res.source}
