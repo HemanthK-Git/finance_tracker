@@ -142,7 +142,6 @@ export default function AddTransaction() {
                     <tr key={idx} className="group hover:bg-accent/5 transition-colors">
                       <td className="py-3 pr-4 align-top">
                         <div className="text-sm font-medium whitespace-nowrap">{formattedDate}</div>
-                        <div className="text-[10px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
                       </td>
                       <td className="py-3 pr-4 align-top">
                         <div className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">{res.note}</div>
