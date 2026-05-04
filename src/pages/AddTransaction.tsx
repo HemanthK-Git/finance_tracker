@@ -6,6 +6,8 @@ import { ArrowLeft, Scan, Loader2, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scanReceipt, parseMultipleTransactions, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { FileSpreadsheet } from "lucide-react";
 
 export default function AddTransaction() {
   const [params] = useSearchParams();
@@ -68,6 +70,64 @@ export default function AddTransaction() {
     }
   };
 
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setScanning(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        if (data.length === 0) {
+          toast.error("The Excel sheet seems to be empty.");
+          return;
+        }
+
+        const results: ScannedData[] = data.map((row: any) => {
+          // Intelligent column mapping
+          const findVal = (keys: string[]) => {
+            const key = Object.keys(row).find(k => keys.some(s => k.toLowerCase().includes(s)));
+            return key ? row[key] : null;
+          };
+
+          const amount = parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit']) || 0).replace(/[^\d.-]/g, ''));
+          const note = String(findVal(['particulars', 'description', 'details', 'note', 'payee', 'merchant']) || "Excel Transaction");
+          const dateStr = String(findVal(['date', 'time', 'day']) || "");
+          const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
+          
+          // Determine type based on amount sign or separate column
+          let type: "income" | "expense" = amount > 0 ? "income" : "expense";
+          const typeVal = String(findVal(['type', 'direction', 'dr/cr']) || "").toLowerCase();
+          if (typeVal.includes('cr') || typeVal.includes('in') || typeVal.includes('credit')) type = "income";
+          if (typeVal.includes('dr') || typeVal.includes('out') || typeVal.includes('debit')) type = "expense";
+
+          return {
+            amount: Math.abs(amount),
+            type,
+            note: note.trim(),
+            date: dateStr.includes('-') || dateStr.includes('/') ? dateStr : new Date().toISOString().split('T')[0],
+            transactionId: ref.trim(),
+            source: file.name.substring(0, 15)
+          };
+        });
+
+        setScannedResults(results);
+        toast.success(`Loaded ${results.length} rows from Excel!`);
+      };
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      toast.error("Failed to read Excel file.");
+    } finally {
+      setScanning(false);
+    }
+  };
+
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-20">
       <div className="flex items-center justify-between">
@@ -76,6 +136,40 @@ export default function AddTransaction() {
         </Button>
       </div>
 
+
+      {!editId && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors overflow-hidden">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
+                <FileSpreadsheet className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Excel / CSV</h3>
+                <p className="text-[10px] text-muted-foreground">Upload statement document</p>
+              </div>
+            </div>
+            <input 
+              type="file" 
+              accept=".xlsx,.xls,.csv" 
+              onChange={handleExcelUpload} 
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </div>
+
+          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <FileImage className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Smart Paste</h3>
+                <p className="text-[10px] text-muted-foreground">Paste copied text history</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!editId && (
         <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
