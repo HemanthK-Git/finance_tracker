@@ -90,10 +90,17 @@ export default function AddTransaction() {
         }
 
         const results: ScannedData[] = data.map((row: any) => {
-          // Exact match for the user's specific headers
-          const dateStr = String(row['Date, Time, Year'] || row['date'] || "");
-          const person = String(row['Person (Sent/Received)'] || row['person'] || "Transaction");
-          const amountStr = String(row['Amount (INR)'] || row['amount'] || "0");
+          // Robust fuzzy column mapping
+          const getVal = (targets: string[]) => {
+            const key = Object.keys(row).find(k => 
+              targets.some(t => k.toLowerCase().replace(/\s+/g, '').includes(t.toLowerCase().replace(/\s+/g, '')))
+            );
+            return key ? row[key] : null;
+          };
+
+          const dateStr = String(getVal(['date', 'time', 'year']) || "");
+          const person = String(getVal(['person', 'sent', 'received', 'particulars', 'payee']) || "Transaction");
+          const amountStr = String(getVal(['amount', 'inr', 'value', 'total', 'debit', 'credit']) || "0");
           const amount = parseFloat(amountStr.replace(/[^\d.-]/g, ''));
 
           // Smart type detection
@@ -106,7 +113,7 @@ export default function AddTransaction() {
             amount: Math.abs(amount),
             type,
             note: person.trim(),
-            date: dateStr.includes('20') ? formatDate(dateStr) : new Date().toISOString().split('T')[0],
+            date: dateStr ? formatDate(String(dateStr)) : new Date().toISOString().split('T')[0],
             transactionId: "",
             source: file.name.substring(0, 15)
           };
