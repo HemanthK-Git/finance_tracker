@@ -169,7 +169,7 @@ function detectSource(text: string): string {
   return 'Bank Statement';
 }
 
-function formatDate(raw: string): string {
+export function formatDate(raw: string): string {
   if (!raw) return new Date().toISOString().split('T')[0];
   
   // Clean raw text

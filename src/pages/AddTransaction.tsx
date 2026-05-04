@@ -4,7 +4,7 @@ import { TransactionForm } from "@/components/TransactionForm";
 import { useTransactions, useUpsertTransaction } from "@/hooks/useTransactions";
 import { ArrowLeft, Scan, Loader2, FileImage, FileSpreadsheet, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { scanReceipt, parseMultipleTransactions, type ScannedData } from "@/lib/ocr";
+import { scanReceipt, parseMultipleTransactions, formatDate, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { FileSpreadsheet } from "lucide-react";
@@ -96,22 +96,28 @@ export default function AddTransaction() {
             return key ? row[key] : null;
           };
 
-          const amount = parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit', 'inr']) || 0).replace(/[^\d.-]/g, ''));
-          const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction");
-          const dateStr = String(findVal(['date', 'time', 'day', 'year']) || "");
+          const amount = Math.abs(parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit', 'inr']) || 0).replace(/[^\d.-]/g, '')));
+          const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction").trim();
+          const dateRaw = String(findVal(['date', 'time', 'day', 'year']) || "");
           const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
           
-          // Determine type based on amount sign or separate column
-          let type: "income" | "expense" = amount > 0 ? "income" : "expense";
+          // Use our robust date/time parsers
+          const date = formatDate(dateRaw);
+          
+          // Determine type: Default to expense unless "received" or "credit" is in headers or note
+          let type: "income" | "expense" = "expense";
           const typeVal = String(findVal(['type', 'direction', 'dr/cr']) || "").toLowerCase();
-          if (typeVal.includes('cr') || typeVal.includes('in') || typeVal.includes('credit')) type = "income";
-          if (typeVal.includes('dr') || typeVal.includes('out') || typeVal.includes('debit')) type = "expense";
+          const noteLow = note.toLowerCase();
+          if (typeVal.includes('cr') || typeVal.includes('in') || typeVal.includes('credit') || noteLow.includes('received') || noteLow.includes('credited')) {
+            type = "income";
+          }
 
           return {
-            amount: Math.abs(amount),
+            amount,
             type,
-            note: note.trim(),
-            date: dateStr.includes('-') || dateStr.includes('/') ? dateStr : new Date().toISOString().split('T')[0],
+            note,
+            date,
+            time: dateRaw.match(/\d{1,2}:\d{2}\s*(?:AM|PM)/i)?.[0] || "--:--",
             transactionId: ref.trim(),
             source: file.name.substring(0, 15)
           };
