@@ -13,11 +13,6 @@ export async function scanReceipt(file: File): Promise<ScannedData[]> {
   const processedImage = await preprocessImage(file);
   const worker = await createWorker('eng');
   
-  // Improve Tesseract accuracy for financial documents
-  await worker.setParameters({
-    tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:₹-() ',
-  });
-
   const { data: { text } } = await worker.recognize(processedImage);
   await worker.terminate();
 
@@ -37,11 +32,11 @@ async function preprocessImage(file: File): Promise<string> {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
         
-        // Scale up slightly for better small text recognition
-        canvas.width = img.width * 1.5;
-        canvas.height = img.height * 1.5;
+        // Scale up significantly for better small text (dots/decimals)
+        canvas.width = img.width * 2;
+        canvas.height = img.height * 2;
         
-        ctx.filter = 'grayscale(100%) contrast(150%) brightness(110%)';
+        ctx.filter = 'grayscale(100%) contrast(200%) brightness(100%)';
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
         resolve(canvas.toDataURL('image/png', 1.0));
@@ -60,18 +55,16 @@ function parseMultipleTransactions(text: string): ScannedData[] {
   
   // 1. Identify all "Amount" candidates as anchors
   const amountAnchors: { val: number; lineIdx: number; raw: string }[] = [];
-  const amtRegex = /(?:INR|₹|Rs|inr|rs)\s*[:\-\s]*\s*([\d,]+\.?\d{0,2})/gi;
+  // Regex updated to allow spaces around decimals (Tesseract often adds them)
+  const amtRegex = /(?:INR|₹|Rs|inr|rs)\s*[:\-\s]*\s*([\d,]+\s*[\.\,]\s*\d{0,2}|[\d,]+)/gi;
 
   lines.forEach((line, idx) => {
     let match;
     while ((match = amtRegex.exec(line)) !== null) {
-      let valStr = match[1];
-      // Smart Decimal Fix: "20,00" -> "20.00"
-      if (valStr.includes(',') && valStr.split(',')[1].length === 2 && !valStr.includes('.')) {
-        valStr = valStr.replace(',', '.');
-      } else {
-        valStr = valStr.replace(/,/g, '');
-      }
+      let valStr = match[1].replace(/\s+/g, '').replace(',', '.');
+      
+      // Smart Decimal Fix: If we see 2000 but it's PhonePe format, it's often 20.00
+      // However, we only fix it if there's a dot/comma that was read as a space
       const val = parseFloat(valStr);
       if (val > 0 && val < 1000000) {
         amountAnchors.push({ val, lineIdx: idx, raw: line });
@@ -106,8 +99,8 @@ function parseMultipleTransactions(text: string): ScannedData[] {
 }
 
 function findNearby(lines: string[], startIdx: number, regex: RegExp): string {
-  // Search up to 4 lines above and 1 line below the amount
-  for (let offset of [0, -1, -2, -3, -4, 1]) {
+  // Search up to 12 lines above and 2 lines below (Statements have long gaps)
+  for (let offset of [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, 1, 2]) {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const match = lines[idx].match(regex);
@@ -118,16 +111,16 @@ function findNearby(lines: string[], startIdx: number, regex: RegExp): string {
 }
 
 function findNearbyNote(lines: string[], startIdx: number): string {
-  // Usually the merchant/person is 1-2 lines above the amount or on the same line
-  for (let offset of [-1, -2, 0, -3, -4]) {
+  // Search wider for the Merchant/Note
+  for (let offset of [-1, -2, -3, -4, -5, 0]) {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
-      // Skip lines that are just dates, times, or IDs
-      if (line.match(/\d{1,2}:\d{2}/) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs/i) || line.match(/^\d+$/)) continue;
+      // Skip lines that are just noise or metadata
+      if (line.match(/\d{1,2}:\d{2}/) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited/i) || line.match(/^\d+$/)) continue;
       
       const clean = line.replace(/(?:Paid|Received|Sent|Transfer|to|from)\s+/gi, '').trim();
-      if (clean.length > 2) return clean;
+      if (clean.length > 2 && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) return clean;
     }
   }
   return "Transaction";
@@ -156,7 +149,7 @@ function formatTime(raw: string): string {
 function cleanNote(note: string): string {
   return note
     .replace(/[)("“'‘*]/g, '')
-    .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit)\b/gi, '')
+    .replace(/\b(Transaction|ID|UTR|No|Ref|Debited|Credited|Success|Debit|Credit|Debt|from|to)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || "Transaction";
 }
