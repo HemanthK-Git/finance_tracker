@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Pencil, Trash2, ArrowUpDown, Plus, Inbox } from "lucide-react";
+import { Search, Pencil, Trash2, ArrowUpDown, Plus, Inbox, CheckSquare, Square, X } from "lucide-react";
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +26,8 @@ export default function History() {
   const [sort, setSort] = useState<SortKey>("date");
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const [toDelete, setToDelete] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     let r = txns.filter((t) => {
@@ -48,6 +51,34 @@ export default function History() {
   const toggleSort = (k: SortKey) => {
     if (sort === k) setDir(dir === "asc" ? "desc" : "asc");
     else { setSort(k); setDir("desc"); }
+  };
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(t => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      for (const id of Array.from(selectedIds)) {
+        await del.mutateAsync(id);
+      }
+      setSelectedIds(new Set());
+    } finally {
+      setBulkDeleting(false);
+      setToDelete(null);
+    }
   };
 
   return (
@@ -102,6 +133,12 @@ export default function History() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b">
+                    <th className="py-3 px-2 w-10">
+                      <Checkbox 
+                        checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </th>
                     <th className="py-3 px-2">
                       <button onClick={() => toggleSort("date")} className="inline-flex items-center gap-1 hover:text-foreground">
                         Date <ArrowUpDown className="h-3 w-3" />
@@ -120,7 +157,13 @@ export default function History() {
                 </thead>
                 <tbody>
                   {filtered.map((t) => (
-                    <tr key={t.id} className="border-b last:border-0 hover:bg-muted/40 transition-smooth">
+                    <tr key={t.id} className={`border-b last:border-0 transition-smooth ${selectedIds.has(t.id) ? 'bg-primary/5' : 'hover:bg-muted/40'}`}>
+                      <td className="py-3 px-2">
+                        <Checkbox 
+                          checked={selectedIds.has(t.id)}
+                          onCheckedChange={() => toggleSelect(t.id)}
+                        />
+                      </td>
                       <td className="py-3 px-2 whitespace-nowrap">{format(new Date(t.date), "MMM d, yyyy")}</td>
                       <td className="py-3 px-2">
                         <span className="inline-flex items-center gap-2">
@@ -156,7 +199,12 @@ export default function History() {
             {/* Mobile list */}
             <ul className="lg:hidden divide-y">
               {filtered.map((t) => (
-                <li key={t.id} className="py-3 flex items-center gap-3">
+                <li key={t.id} className={`py-3 flex items-center gap-3 px-1 transition-colors ${selectedIds.has(t.id) ? 'bg-primary/5 rounded-xl' : ''}`}>
+                  <Checkbox 
+                    checked={selectedIds.has(t.id)}
+                    onCheckedChange={() => toggleSelect(t.id)}
+                    className="h-5 w-5"
+                  />
                   <div
                     className="h-10 w-10 rounded-xl flex items-center justify-center text-xs font-semibold shrink-0"
                     style={{ background: `${CATEGORY_COLORS[t.category as Category]}20`, color: CATEGORY_COLORS[t.category as Category] }}
@@ -187,23 +235,61 @@ export default function History() {
         )}
       </div>
 
-      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+      <AlertDialog open={!!toDelete || selectedIds.size > 0 && bulkDeleting} onOpenChange={(o) => { if (!o) { setToDelete(null); setBulkDeleting(false); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>
+              {selectedIds.size > 0 ? `Delete ${selectedIds.size} transactions?` : "Delete this transaction?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All selected records will be permanently removed.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { if (toDelete) { del.mutate(toDelete); setToDelete(null); } }}
+              onClick={selectedIds.size > 0 ? handleBulkDelete : () => { if (toDelete) { del.mutate(toDelete); setToDelete(null); } }}
             >
-              Delete
+              {del.isPending || bulkDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 duration-300">
+          <div className="bg-foreground text-background px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 border border-white/10 backdrop-blur-xl bg-opacity-90">
+            <div className="flex items-center gap-3 border-r border-white/20 pr-6">
+              <div className="bg-primary h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-bold">
+                {selectedIds.size}
+              </div>
+              <span className="text-sm font-medium">Selected</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 text-xs hover:bg-white/10 text-white"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                <X className="h-3.5 w-3.5 mr-1.5" /> Clear
+              </Button>
+              
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="h-9 px-4 rounded-xl shadow-glow-destructive"
+                onClick={() => setBulkDeleting(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Delete Selected
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
