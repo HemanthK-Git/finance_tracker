@@ -82,20 +82,30 @@ export default function AddTransaction() {
         const wb = XLSX.read(bstr, { type: "binary" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        
+        // Get raw rows to find the header row
+        const rawRows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        // Find the index of the header row (contains keywords like 'Date', 'Person', 'Amount')
+        const headerIdx = rawRows.findIndex(row => 
+          row.some(cell => {
+            const c = String(cell).toLowerCase();
+            return c.includes('date') || c.includes('person') || c.includes('amount');
+          })
+        );
 
-        if (data.length === 0) {
-          toast.error("The Excel sheet seems to be empty.");
+        if (headerIdx === -1) {
+          toast.error("Could not find a header row in the Excel sheet.");
           return;
         }
 
-        const results: ScannedData[] = data.map((row: any) => {
-          // Robust fuzzy column mapping
+        const headers = rawRows[headerIdx].map(h => String(h).toLowerCase().replace(/\s+/g, ''));
+        const dataRows = rawRows.slice(headerIdx + 1);
+
+        const results: ScannedData[] = dataRows.filter(row => row.length > 0).map((row: any[]) => {
           const getVal = (targets: string[]) => {
-            const key = Object.keys(row).find(k => 
-              targets.some(t => k.toLowerCase().replace(/\s+/g, '').includes(t.toLowerCase().replace(/\s+/g, '')))
-            );
-            return key ? row[key] : null;
+            const idx = headers.findIndex(h => targets.some(t => h.includes(t)));
+            return idx !== -1 ? row[idx] : null;
           };
 
           const dateStr = String(getVal(['date', 'time', 'year']) || "");
@@ -117,10 +127,10 @@ export default function AddTransaction() {
             transactionId: "",
             source: file.name.substring(0, 15)
           };
-        });
+        }).filter(r => r.amount > 0); // Filter out empty/zero rows
 
         setScannedResults(results);
-        toast.success(`Loaded ${results.length} rows from Excel!`);
+        toast.success(`Successfully loaded ${results.length} transactions!`);
       };
       reader.readAsBinaryString(file);
     } catch (error) {
