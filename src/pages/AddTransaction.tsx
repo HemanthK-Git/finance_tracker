@@ -96,9 +96,9 @@ export default function AddTransaction() {
             return key ? row[key] : null;
           };
 
-          const amount = parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit']) || 0).replace(/[^\d.-]/g, ''));
-          const note = String(findVal(['particulars', 'description', 'details', 'note', 'payee', 'merchant']) || "Excel Transaction");
-          const dateStr = String(findVal(['date', 'time', 'day']) || "");
+          const amount = parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit', 'inr']) || 0).replace(/[^\d.-]/g, ''));
+          const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction");
+          const dateStr = String(findVal(['date', 'time', 'day', 'year']) || "");
           const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
           
           // Determine type based on amount sign or separate column
