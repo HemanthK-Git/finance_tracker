@@ -151,16 +151,33 @@ export default function AddTransaction() {
                   const dateObj = res.date ? new Date(res.date) : new Date();
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                   
+                  // Check if this specific item is a duplicate
+                  const isDuplicate = transactions?.some(t => 
+                    (res.transactionId && t.note?.includes(res.transactionId)) ||
+                    (t.amount === (res.amount || 0) && 
+                     t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
+                     t.date === (res.date || new Date().toISOString().split('T')[0]))
+                  );
+                  
                   return (
-                    <tr key={idx} className="group hover:bg-accent/5 transition-colors">
+                    <tr key={idx} className={`group transition-colors ${isDuplicate ? 'bg-orange-500/5' : 'hover:bg-accent/5'}`}>
                       <td className="py-3 pr-4 align-top">
                         <div className="text-sm font-medium whitespace-nowrap">{formattedDate}</div>
                         <div className="text-[10px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
                       </td>
                       <td className="py-3 pr-4 align-top">
-                        <div className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">{res.note}</div>
-                        <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                          {res.type}
+                        <div className="flex flex-col gap-1">
+                          <div className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">{res.note}</div>
+                          <div className="flex items-center gap-2">
+                            <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                              {res.type}
+                            </div>
+                            {isDuplicate && (
+                              <span className="text-[9px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded font-bold border border-orange-500/20 animate-pulse">
+                                ⚠️ ALREADY IN HISTORY
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className={`py-3 align-top text-right font-mono font-bold text-sm ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
@@ -172,13 +189,23 @@ export default function AddTransaction() {
               </tbody>
             </table>
           </div>
-          <div className="flex gap-3">
-            <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
-              Add All {scannedResults.length} Transactions
-            </Button>
-            <Button variant="outline" onClick={() => setScannedResults([])} className="h-12 px-6">
-              Clear
-            </Button>
+          <div className="flex flex-col gap-3">
+            {scannedResults.some(res => transactions?.some(t => 
+              (res.transactionId && t.note?.includes(res.transactionId)) ||
+              (t.amount === (res.amount || 0) && t.note === res.note && t.date === res.date)
+            )) && (
+              <p className="text-[10px] text-orange-600 font-medium text-center bg-orange-50 p-2 rounded-lg border border-orange-100">
+                Some transactions above are already in your database and will be skipped.
+              </p>
+            )}
+            <div className="flex gap-3">
+              <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
+                Add New Transactions
+              </Button>
+              <Button variant="outline" onClick={() => setScannedResults([])} className="h-12 px-6">
+                Clear
+              </Button>
+            </div>
           </div>
         </div>
       )}
