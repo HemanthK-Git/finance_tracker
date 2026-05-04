@@ -121,26 +121,68 @@ export default function AddTransaction() {
       )}
 
       {!editId && (
-        <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed">
-          <div className="flex items-center gap-2 text-muted-foreground mb-2">
-            <FileImage className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Or Paste Transaction Text</span>
+        <div className="relative">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+            <div className="bg-background px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">OR</div>
           </div>
-          <textarea
-            placeholder="Paste your bank statement text here..."
-            className="w-full h-32 p-3 text-xs font-mono rounded-xl border bg-accent/10 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            onChange={(e) => {
-              const text = e.target.value;
-              if (text.length > 20) {
-                const results = parseMultipleTransactions(text);
-                if (results.length > 0) {
+          <div className="h-px bg-border w-full my-8" />
+        </div>
+      )}
+
+      {!editId && (
+        <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <FileImage className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
+                <p className="text-[10px] text-muted-foreground">Paste history text from your bank</p>
+              </div>
+            </div>
+            {scannedResults.length > 0 && (
+              <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
+                {scannedResults.length} Items Found
+              </div>
+            )}
+          </div>
+
+          <div className="relative group">
+            <textarea
+              placeholder="Paste your bank statement text here... (e.g. Apr 04, Paid to Pankaj, INR 20.00)"
+              className="w-full h-40 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
+              id="manual-text-import"
+              onChange={(e) => {
+                const text = e.target.value;
+                if (text.length > 30) {
+                  const results = parseMultipleTransactions(text);
                   setScannedResults(results);
-                  setDebugText(`Pasted text parsed! Found ${results.length} items.`);
+                  if (results.length > 0) {
+                    setDebugText(`Smart parser identified ${results.length} transactions from your text.`);
+                  }
                 }
-              }
-            }}
-          />
-          <p className="text-[10px] text-muted-foreground italic">Tip: Copy the whole table from your bank's website and paste it here.</p>
+              }}
+            />
+            <div className="absolute bottom-3 right-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10px] bg-background/80 backdrop-blur-sm"
+                onClick={() => {
+                  const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
+                  if (el) el.value = '';
+                  setScannedResults([]);
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
+            <Scan className="h-3 w-3" />
+            <span>AI will automatically detect Dates, Amounts, and Names from your pasted text.</span>
+          </div>
         </div>
       )}
 
