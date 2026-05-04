@@ -119,8 +119,13 @@ function findNearbyNote(lines: string[], startIdx: number): string {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
-      if (line.match(merchantKeywords)) {
-        return cleanNote(line.replace(merchantKeywords, ''));
+      const match = line.match(merchantKeywords);
+      if (match) {
+        // CRITICAL FIX: If the line is "Date Time Paid to Merchant", 
+        // we must discard everything BEFORE "Paid to".
+        const parts = line.split(match[0]);
+        const potentialNote = parts.length > 1 ? parts[1] : parts[0];
+        return cleanNote(potentialNote);
       }
     }
   }
@@ -133,7 +138,7 @@ function findNearbyNote(lines: string[], startIdx: number): string {
       if (line.match(/\d{1,2}:\d{2}/) || line.match(datePattern) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited/i) || line.match(/^\d+$/)) continue;
       
       const clean = line.replace(/(?:Paid|Received|Sent|Transfer|to|from)\s+/gi, '').trim();
-      if (clean.length > 2 && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) return clean;
+      if (clean.length > 2 && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) return cleanNote(clean);
     }
   }
   return "Transaction";
