@@ -56,7 +56,7 @@ function parseMultipleTransactions(text: string): ScannedData[] {
   // 1. Identify all "Amount" candidates as anchors
   const amountAnchors: { val: number; lineIdx: number; raw: string }[] = [];
   // Regex updated to allow spaces around decimals (Tesseract often adds them)
-  const amtRegex = /(?:INR|₹|Rs|inr|rs)\s*[:\-\s]*\s*([\d,]+\s*[\.\,]\s*\d{0,2}|[\d,]+)/gi;
+  const amtRegex = /(?:INR|₹|Rs|inr|rs|1NR|1nr)?\s*[:\-\s]*\s*([\d,]+\s*[\.\,]\s*\d{2}|[\d,]+\s*[\.\,]\s*\d{1}|[\d,]+)/gi;
 
   lines.forEach((line, idx) => {
     let match;
@@ -78,8 +78,8 @@ function parseMultipleTransactions(text: string): ScannedData[] {
     const time = findNearby(lines, anchor.lineIdx, /\d{1,2}:\d{2}\s*(?:AM|PM)?/i);
     const note = findNearbyNote(lines, anchor.lineIdx);
     
-    // Determine type (Income if "received", "credited", "from")
-    const context = (lines[anchor.lineIdx] + " " + (lines[anchor.lineIdx-1] || "")).toLowerCase();
+    // Determine type (Income if "received", "credited", "from", "credit")
+    const context = (lines[anchor.lineIdx] + " " + (lines[anchor.lineIdx-1] || "") + " " + (lines[anchor.lineIdx-2] || "") + " " + (lines[anchor.lineIdx+1] || "")).toLowerCase();
     const type = (context.includes("received") || context.includes("credit") || context.includes("from")) ? "income" : "expense";
 
     results.push({
@@ -92,10 +92,7 @@ function parseMultipleTransactions(text: string): ScannedData[] {
     });
   });
 
-  // Deduplicate: If same amount/note/date found twice (OCR noise)
-  return results.filter((v, i, a) => 
-    a.findIndex(t => t.amount === v.amount && t.note === v.note && t.date === v.date) === i
-  );
+  return results;
 }
 
 function findNearby(lines: string[], startIdx: number, regex: RegExp): string {
