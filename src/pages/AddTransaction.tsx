@@ -124,14 +124,36 @@ export default function AddTransaction() {
           <h2 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
             <Scan className="h-5 w-5 text-primary" /> Review {scannedResults.length} Transactions
           </h2>
-          <ul className="divide-y mb-6">
-            {scannedResults.map((res, idx) => (
-              <li key={idx} className="py-3 flex justify-between items-center text-sm">
-                <span className="font-medium truncate max-w-[180px]">{res.note}</span>
-                <span className="font-mono font-bold text-expense">₹{res.amount}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto -mx-5 px-5 mb-6">
+            <table className="w-full text-left border-separate border-spacing-0">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-widest text-muted-foreground border-b">
+                  <th className="py-2 pr-4 font-semibold border-b border-accent/20">Date / Time</th>
+                  <th className="py-2 pr-4 font-semibold border-b border-accent/20">Transaction Details</th>
+                  <th className="py-2 text-right font-semibold border-b border-accent/20">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-accent/10">
+                {scannedResults.map((res, idx) => (
+                  <tr key={idx} className="group hover:bg-accent/5 transition-colors">
+                    <td className="py-3 pr-4 align-top">
+                      <div className="text-sm font-medium whitespace-nowrap">{res.date ? new Date(res.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '---'}</div>
+                      <div className="text-[10px] text-muted-foreground">{res.time || '--:--'}</div>
+                    </td>
+                    <td className="py-3 pr-4 align-top">
+                      <div className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors">{res.note}</div>
+                      <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                        {res.type}
+                      </div>
+                    </td>
+                    <td className={`py-3 align-top text-right font-mono font-bold text-sm ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                      {res.type === 'income' ? '+' : '-'}₹{res.amount}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="flex gap-3">
             <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
               Add All {scannedResults.length} Transactions
