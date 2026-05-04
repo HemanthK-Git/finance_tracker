@@ -57,9 +57,10 @@ export default function AddTransaction() {
       for (const res of scannedResults) {
         // Check for duplicates (same amount, note, and date)
         const isDuplicate = transactions?.some(t => 
-          t.amount === (res.amount || 0) && 
-          t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
-          t.date === (res.date || new Date().toISOString().split('T')[0])
+          (res.transactionId && t.note?.includes(res.transactionId)) ||
+          (t.amount === (res.amount || 0) && 
+           t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() && 
+           t.date === (res.date || new Date().toISOString().split('T')[0]))
         );
 
         if (isDuplicate) {
@@ -73,7 +74,7 @@ export default function AddTransaction() {
             amount: res.amount || 0,
             category: res.category || "Other",
             date: res.date || new Date().toISOString().split('T')[0],
-            note: res.note || "Bulk Scanned",
+            note: res.transactionId ? `${res.note} (ID: ${res.transactionId})` : (res.note || "Bulk Scanned"),
           }
         });
         addedCount++;

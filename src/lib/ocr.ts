@@ -7,6 +7,7 @@ export type ScannedData = {
   time?: string; // HH:mm format
   category?: string;
   note?: string;
+  transactionId?: string;
 };
 
 export async function scanReceipt(file: File): Promise<ScannedData[]> {
@@ -77,6 +78,7 @@ function parseMultipleTransactions(text: string): ScannedData[] {
     const date = findNearby(lines, anchor.lineIdx, /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(?:20\d{2})?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/i);
     const time = findNearby(lines, anchor.lineIdx, /\d{1,2}:\d{2}\s*(?:AM|PM)?/i);
     const note = findNearbyNote(lines, anchor.lineIdx);
+    const transactionId = findNearby(lines, anchor.lineIdx, /(?:Transaction ID|ID)\s*[:\-]\s*([A-Z0-9]{15,})/i);
     
     // Determine type (Income if "received", "credited", "from", "credit")
     const context = (lines[anchor.lineIdx] + " " + (lines[anchor.lineIdx-1] || "") + " " + (lines[anchor.lineIdx-2] || "") + " " + (lines[anchor.lineIdx+1] || "")).toLowerCase();
@@ -88,6 +90,7 @@ function parseMultipleTransactions(text: string): ScannedData[] {
       date: formatDate(date),
       time: formatTime(time),
       note: cleanNote(note),
+      transactionId: transactionId.replace(/(?:Transaction ID|ID)\s*[:\-]\s*/i, '').trim(),
       category: type === "income" ? "Income" : detectCategory(note)
     });
   });
