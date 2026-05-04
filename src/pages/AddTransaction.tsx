@@ -82,55 +82,43 @@ export default function AddTransaction() {
         const wb = XLSX.read(bstr, { type: "binary" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        
-        // Get raw rows to find the header row
-        const rawRows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        
-        // Find the index of the header row (contains keywords like 'Date', 'Person', 'Amount')
-        const headerIdx = rawRows.findIndex(row => 
-          row.some(cell => {
-            const c = String(cell).toLowerCase();
-            return c.includes('date') || c.includes('person') || c.includes('amount');
-          })
-        );
+        const data = XLSX.utils.sheet_to_json(ws);
 
-        if (headerIdx === -1) {
-          toast.error("Could not find a header row in the Excel sheet.");
+        if (data.length === 0) {
+          toast.error("The Excel sheet seems to be empty.");
           return;
         }
 
-        const headers = rawRows[headerIdx].map(h => String(h).toLowerCase().replace(/\s+/g, ''));
-        const dataRows = rawRows.slice(headerIdx + 1);
-
-        const results: ScannedData[] = dataRows.filter(row => row.length > 0).map((row: any[]) => {
-          const getVal = (targets: string[]) => {
-            const idx = headers.findIndex(h => targets.some(t => h.includes(t)));
-            return idx !== -1 ? row[idx] : null;
+        const results: ScannedData[] = data.map((row: any) => {
+          // Intelligent column mapping
+          const findVal = (keys: string[]) => {
+            const key = Object.keys(row).find(k => keys.some(s => k.toLowerCase().includes(s)));
+            return key ? row[key] : null;
           };
 
-          const dateStr = String(getVal(['date', 'time', 'year']) || "");
-          const person = String(getVal(['person', 'sent', 'received', 'particulars', 'payee']) || "Transaction");
-          const amountStr = String(getVal(['amount', 'inr', 'value', 'total', 'debit', 'credit']) || "0");
-          const amount = parseFloat(amountStr.replace(/[^\d.-]/g, ''));
-
-          // Smart type detection
-          let type: "income" | "expense" = "expense";
-          if (person.match(/\d{4}/) || person.toLowerCase().includes('received') || amountStr.includes('+')) {
-            type = "income";
-          }
+          const amount = parseFloat(String(findVal(['amount', 'value', 'total', 'debit', 'credit', 'inr']) || 0).replace(/[^\d.-]/g, ''));
+          const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction");
+          const dateStr = String(findVal(['date', 'time', 'day', 'year']) || "");
+          const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
+          
+          // Determine type based on amount sign or separate column
+          let type: "income" | "expense" = amount > 0 ? "income" : "expense";
+          const typeVal = String(findVal(['type', 'direction', 'dr/cr']) || "").toLowerCase();
+          if (typeVal.includes('cr') || typeVal.includes('in') || typeVal.includes('credit')) type = "income";
+          if (typeVal.includes('dr') || typeVal.includes('out') || typeVal.includes('debit')) type = "expense";
 
           return {
             amount: Math.abs(amount),
             type,
-            note: person.trim(),
-            date: dateStr ? formatDate(String(dateStr)) : new Date().toISOString().split('T')[0],
-            transactionId: "",
+            note: note.trim(),
+            date: dateStr.includes('-') || dateStr.includes('/') ? dateStr : new Date().toISOString().split('T')[0],
+            transactionId: ref.trim(),
             source: file.name.substring(0, 15)
           };
-        }).filter(r => r.amount > 0); // Filter out empty/zero rows
+        });
 
         setScannedResults(results);
-        toast.success(`Successfully loaded ${results.length} transactions!`);
+        toast.success(`Loaded ${results.length} rows from Excel!`);
       };
       reader.readAsBinaryString(file);
     } catch (error) {
@@ -150,18 +138,15 @@ export default function AddTransaction() {
 
 
       {!editId && (
-        <div className="grid grid-cols-1 gap-6">
-          {/* Excel Card */}
-          <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500 border-dashed border-green-500/20 hover:bg-green-500/5 transition-all relative group overflow-hidden">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-600">
-                  <FileSpreadsheet className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold tracking-tight">Excel / CSV Document</h3>
-                  <p className="text-xs text-muted-foreground">Upload your bank statement file</p>
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors overflow-hidden">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
+                <FileSpreadsheet className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Excel / CSV</h3>
+                <p className="text-[10px] text-muted-foreground">Upload statement document</p>
               </div>
             </div>
             <input 
@@ -172,57 +157,73 @@ export default function AddTransaction() {
             />
           </div>
 
-          {/* Smart Paste Card */}
-          <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <FileImage className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold tracking-tight">Smart Text Import</h3>
-                  <p className="text-xs text-muted-foreground">Paste any text history from your bank</p>
-                </div>
+          <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed relative group hover:bg-accent/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <FileImage className="h-4 w-4" />
               </div>
-              {scannedResults.length > 0 && (
-                <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
-                  {scannedResults.length} Items Identified
-                </div>
-              )}
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Smart Paste</h3>
+                <p className="text-[10px] text-muted-foreground">Paste copied text history</p>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="relative group">
-              <textarea
-                placeholder="Paste your bank statement text here... (e.g. Apr 04, Paid to Pankaj, INR 20.00)"
-                className="w-full h-40 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
-                id="manual-text-import"
-                onChange={(e) => {
-                  const text = e.target.value;
-                  if (text.length > 20) {
-                    const results = parseMultipleTransactions(text);
-                    setScannedResults(results);
-                  }
-                }}
-              />
-              <div className="absolute bottom-3 right-3">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-7 text-[10px] bg-background/80 backdrop-blur-sm"
-                  onClick={() => {
-                    const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
-                    if (el) el.value = '';
-                    setScannedResults([]);
-                  }}
-                >
-                  Clear
-                </Button>
+      {!editId && (
+        <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <FileImage className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
+                <p className="text-[10px] text-muted-foreground">Paste history text from your bank</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
-              <Scan className="h-3 w-3" />
-              <span>AI detects Dates, Amounts, and Merchant names from your pasted text instantly.</span>
+            {scannedResults.length > 0 && (
+              <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
+                {scannedResults.length} Items Found
+              </div>
+            )}
+          </div>
+
+          <div className="relative group">
+            <textarea
+              placeholder="Paste your bank statement text here... (e.g. Apr 04, Paid to Pankaj, INR 20.00)"
+              className="w-full h-40 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
+              id="manual-text-import"
+              onChange={(e) => {
+                const text = e.target.value;
+                if (text.length > 30) {
+                  const results = parseMultipleTransactions(text);
+                  setScannedResults(results);
+                  if (results.length > 0) {
+                    setDebugText(`Smart parser identified ${results.length} transactions from your text.`);
+                  }
+                }
+              }}
+            />
+            <div className="absolute bottom-3 right-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10px] bg-background/80 backdrop-blur-sm"
+                onClick={() => {
+                  const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
+                  if (el) el.value = '';
+                  setScannedResults([]);
+                }}
+              >
+                Clear
+              </Button>
             </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
+            <Scan className="h-3 w-3" />
+            <span>AI will automatically detect Dates, Amounts, and Names from your pasted text.</span>
           </div>
         </div>
       )}
