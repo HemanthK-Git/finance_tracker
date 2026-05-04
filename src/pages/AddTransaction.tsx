@@ -4,7 +4,7 @@ import { TransactionForm } from "@/components/TransactionForm";
 import { useTransactions, useUpsertTransaction } from "@/hooks/useTransactions";
 import { ArrowLeft, Scan, Loader2, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { scanReceipt, type ScannedData } from "@/lib/ocr";
+import { scanReceipt, parseMultipleTransactions, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
 
 export default function AddTransaction() {
@@ -117,6 +117,30 @@ export default function AddTransaction() {
             className="absolute inset-0 opacity-0 cursor-pointer"
             disabled={scanning}
           />
+        </div>
+      )}
+
+      {!editId && (
+        <div className="rounded-2xl border bg-card p-5 space-y-4 shadow-sm border-dashed">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <FileImage className="h-4 w-4" />
+            <span className="text-xs font-semibold uppercase tracking-wider">Or Paste Transaction Text</span>
+          </div>
+          <textarea
+            placeholder="Paste your bank statement text here..."
+            className="w-full h-32 p-3 text-xs font-mono rounded-xl border bg-accent/10 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            onChange={(e) => {
+              const text = e.target.value;
+              if (text.length > 20) {
+                const results = parseMultipleTransactions(text);
+                if (results.length > 0) {
+                  setScannedResults(results);
+                  setDebugText(`Pasted text parsed! Found ${results.length} items.`);
+                }
+              }
+            }}
+          />
+          <p className="text-[10px] text-muted-foreground italic">Tip: Copy the whole table from your bank's website and paste it here.</p>
         </div>
       )}
 

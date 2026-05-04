@@ -48,7 +48,7 @@ async function preprocessImage(file: File): Promise<string> {
   });
 }
 
-function parseMultipleTransactions(text: string): ScannedData[] {
+export function parseMultipleTransactions(text: string): ScannedData[] {
   if (!text) return [];
 
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
