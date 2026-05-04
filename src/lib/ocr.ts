@@ -80,9 +80,14 @@ export function parseMultipleTransactions(text: string): ScannedData[] {
     const note = findNearbyNote(lines, anchor.lineIdx);
     const transactionId = findNearby(lines, anchor.lineIdx, /(?:Transaction ID|ID)\s*[:\-]\s*([A-Z0-9]{15,})/i);
     
-    // Determine type (Income if "received", "credited", "from", "credit")
+    // Determine type (Income vs Expense)
     const context = (lines[anchor.lineIdx] + " " + (lines[anchor.lineIdx-1] || "") + " " + (lines[anchor.lineIdx-2] || "") + " " + (lines[anchor.lineIdx+1] || "")).toLowerCase();
-    const type = (context.includes("received") || context.includes("credit") || context.includes("from")) ? "income" : "expense";
+    let type: "income" | "expense" = "expense";
+    if (context.includes("received") || context.includes("credit") || context.includes("credited to")) {
+      type = "income";
+    } else if (context.includes("paid") || context.includes("debit") || context.includes("debited from")) {
+      type = "expense";
+    }
 
     results.push({
       type,
@@ -111,7 +116,7 @@ function findNearby(lines: string[], startIdx: number, regex: RegExp): string {
 }
 
 function findNearbyNote(lines: string[], startIdx: number): string {
-  const merchantKeywords = /(?:Paid to|Received from|Sent to|Transfer to|Credit from|From)\s+/i;
+  const merchantKeywords = /(?:Paid to|Received from|Sent to|Transfer to|Credit from)\s+/i;
   const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(?:20\d{2})?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/i;
 
   // Pass 1: Look for explicit Merchant keywords (High Priority)
@@ -135,7 +140,7 @@ function findNearbyNote(lines: string[], startIdx: number): string {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
-      if (line.match(/\d{1,2}:\d{2}/) || line.match(datePattern) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited/i) || line.match(/^\d+$/)) continue;
+      if (line.match(/\d{1,2}:\d{2}/) || line.match(datePattern) || line.match(/Transaction|ID|UTR|Ref|INR|₹|Rs|Debited|Credited|Account|XX\d+/i) || line.match(/^\d+$/)) continue;
       
       const clean = line.replace(/(?:Paid|Received|Sent|Transfer|to|from)\s+/gi, '').trim();
       if (clean.length > 2 && !['Debit', 'Credit', 'Debt', 'Success'].includes(clean)) return cleanNote(clean);
