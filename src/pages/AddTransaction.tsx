@@ -104,12 +104,15 @@ export default function AddTransaction() {
           // Use our robust date/time parsers
           const date = formatDate(dateRaw);
           
-          // Determine type: Default to expense unless "received" or "credit" is in headers or note
+          // Determine type: Explicitly check for Debit/Credit column
           let type: "income" | "expense" = "expense";
-          const typeVal = String(findVal(['type', 'direction', 'dr/cr']) || "").toLowerCase();
+          const typeVal = String(findVal(['type', 'direction', 'dr/cr', 'debit/credit']) || "").toLowerCase();
           const noteLow = note.toLowerCase();
-          if (typeVal.includes('cr') || typeVal.includes('in') || typeVal.includes('credit') || noteLow.includes('received') || noteLow.includes('credited')) {
+          
+          if (typeVal.includes('credit') || typeVal.includes('cr') || typeVal.includes('in') || noteLow.includes('received') || noteLow.includes('credited')) {
             type = "income";
+          } else if (typeVal.includes('debit') || typeVal.includes('dr') || typeVal.includes('out')) {
+            type = "expense";
           }
 
           return {
