@@ -156,17 +156,34 @@ function findNearbyNote(lines: string[], startIdx: number): string {
 
 function formatDate(raw: string): string {
   if (!raw) return new Date().toISOString().split('T')[0];
+  
+  // Clean raw text
+  const clean = raw.replace(/st|nd|rd|th/gi, '').replace(/[|,]/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  // Try to match "Apr 04 2026" or "04 Apr 2026" or "04-04-2026"
+  const monthMap: { [key: string]: string } = {
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+  };
+
+  const monthRegex = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+  const monthMatch = clean.match(monthRegex);
+  const dayMatch = clean.match(/\b(\d{1,2})\b/);
+  const yearMatch = clean.match(/\b(20\d{2})\b/);
+
+  if (monthMatch && dayMatch && yearMatch) {
+    const m = monthMap[monthMatch[0].toLowerCase().substring(0, 3)];
+    const d = dayMatch[1].padStart(2, '0');
+    const y = yearMatch[1];
+    return `${y}-${m}-${d}`;
+  }
+
+  // Fallback to standard parser if regex fails
   try {
-    // Clean common OCR artifacts from dates
-    const cleanRaw = raw
-      .replace(/st|nd|rd|th/i, '')
-      .replace(/es on N/gi, '')
-      .replace(/[|]/g, '')
-      .trim();
-      
-    const d = new Date(cleanRaw);
+    const d = new Date(clean);
     if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
   } catch(e) {}
+  
   return new Date().toISOString().split('T')[0];
 }
 
