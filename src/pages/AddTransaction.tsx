@@ -133,20 +133,42 @@ export default function AddTransaction() {
 
 
       {!editId && (
-        <div className="rounded-2xl border bg-card p-8 shadow-elegant text-center space-y-4 animate-in fade-in zoom-in-95 duration-500 border-dashed hover:bg-accent/5 transition-all relative overflow-hidden group">
-          <div className="h-16 w-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-600 mx-auto group-hover:scale-110 transition-transform">
-            <FileSpreadsheet className="h-8 w-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-2xl border bg-card p-6 shadow-elegant text-center space-y-3 animate-in fade-in zoom-in-95 duration-500 border-dashed hover:bg-accent/5 transition-all relative overflow-hidden group">
+            <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-600 mx-auto group-hover:scale-110 transition-transform">
+              <FileSpreadsheet className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold tracking-tight">Excel / CSV</h3>
+              <p className="text-[10px] text-muted-foreground">Upload statement</p>
+            </div>
+            <input 
+              type="file" 
+              accept=".xlsx,.xls,.csv" 
+              onChange={handleExcelUpload} 
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
           </div>
-          <div>
-            <h3 className="text-lg font-bold tracking-tight">Import Excel or CSV</h3>
-            <p className="text-sm text-muted-foreground max-w-[240px] mx-auto mt-1">Upload your bank statement document to sync your history</p>
+
+          <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-3 animate-in fade-in zoom-in-95 duration-500">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <FileImage className="h-4 w-4" />
+              </div>
+              <h3 className="text-sm font-bold tracking-tight">Smart Paste</h3>
+            </div>
+            <textarea
+              placeholder="Paste text here..."
+              className="w-full h-20 p-3 text-[10px] font-mono rounded-lg border bg-accent/5 focus:bg-background outline-none resize-none"
+              onChange={(e) => {
+                const text = e.target.value;
+                if (text.length > 20) {
+                  const results = parseMultipleTransactions(text);
+                  setScannedResults(results);
+                }
+              }}
+            />
           </div>
-          <input 
-            type="file" 
-            accept=".xlsx,.xls,.csv" 
-            onChange={handleExcelUpload} 
-            className="absolute inset-0 opacity-0 cursor-pointer"
-          />
         </div>
       )}
 
