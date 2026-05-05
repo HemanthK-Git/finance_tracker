@@ -183,15 +183,17 @@ export function formatDate(raw: string): string {
 
   const monthRegex = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
   const monthMatch = clean.match(monthRegex);
-  const dayMatch = clean.match(/\b(\d{1,2})\b/);
-  const yearMatch = clean.match(/\b(20\d{2}|\d{2})\b/);
-
-  if (monthMatch && dayMatch && yearMatch) {
+  const numbers = clean.match(/\d+/g) || [];
+  
+  if (monthMatch && numbers.length >= 2) {
     const m = monthMap[monthMatch[0].toLowerCase().substring(0, 3)];
-    const d = dayMatch[1].padStart(2, '0');
-    let y = yearMatch[1];
+    // Usually format is "Day Month Year" or "Month Day Year"
+    // Year is usually 4 digits, or the last number in the sequence
+    let y = numbers.find(n => n.length === 4) || numbers[numbers.length - 1];
+    let d = numbers.find(n => n !== y) || numbers[0];
+
     if (y.length === 2) y = `20${y}`;
-    return `${y}-${m}-${d}`;
+    return `${y}-${m}-${d.padStart(2, '0')}`;
   }
 
   // Fallback to standard parser if regex fails
