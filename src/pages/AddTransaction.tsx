@@ -32,22 +32,35 @@ export default function AddTransaction() {
       const latestTransactions = transactions || [];
       
       for (const res of scannedResults) {
-        const isDuplicate = latestTransactions.some(t => {
-          // 1. Primary Check: Transaction ID + Type + Time
+        let isDuplicate = false;
+
+        for (const t of latestTransactions) {
+          // 1. Primary Check: If both have Transaction IDs, they MUST match exactly to be a duplicate
           if (res.transactionId && t.note?.includes(res.transactionId)) {
-            // Only a duplicate if the ID, Type, AND Time match exactly
-            return t.type === res.type && (t.time === res.time || !t.time || !res.time);
+            isDuplicate = true;
+            break;
           }
           
-          // 2. Secondary Check: Amount + Date + Note + Time (Fallback if no ID)
+          // If we have a Transaction ID in the new result, but it doesn't match the one in 't', 
+          // then 't' is NOT a duplicate of 'res' (even if everything else matches)
+          if (res.transactionId && t.note?.match(/ID:\s*([A-Z0-9]+)/)?.[1] && !t.note.includes(res.transactionId)) {
+            continue;
+          }
+
+          // 2. Fallback: Detailed field match (only if no ID or ID match wasn't conclusive)
           const amountMatch = t.amount === (res.amount || 0);
           const dateMatch = t.date === (res.date || new Date().toISOString().split('T')[0]);
-          const timeMatch = t.time === res.time || !t.time || !res.time;
           const typeMatch = t.type === res.type;
-          const noteMatch = t.note?.toLowerCase().includes((res.note || "").toLowerCase().trim());
+          const timeMatch = t.time === res.time || !t.time || !res.time;
           
-          return amountMatch && dateMatch && timeMatch && typeMatch && noteMatch;
-        });
+          // Strict Note Check
+          const noteMatch = (t.note || "").toLowerCase().trim().includes((res.note || "").toLowerCase().trim());
+
+          if (amountMatch && dateMatch && typeMatch && timeMatch && noteMatch) {
+            isDuplicate = true;
+            break;
+          }
+        }
 
         if (isDuplicate) {
           skippedCount++;
@@ -262,14 +275,19 @@ export default function AddTransaction() {
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
                   // Check if this specific item is a duplicate (Match ID + Type + Time)
-                  const isDuplicate = transactions?.some(t =>
-                    (res.transactionId && t.note?.includes(res.transactionId) && t.type === res.type && (t.time === res.time || !t.time)) ||
-                    (t.amount === (res.amount || 0) &&
+                  const isDuplicate = transactions?.some(t => {
+                    // Match ID if present
+                    if (res.transactionId && t.note?.includes(res.transactionId)) return true;
+                    // If result has ID but t doesn't match it, it's not a duplicate
+                    if (res.transactionId && t.note?.includes("ID: ") && !t.note.includes(res.transactionId)) return false;
+                    
+                    // Fallback to strict fields
+                    return t.amount === (res.amount || 0) &&
                       t.type === res.type &&
                       t.time === res.time &&
-                      t.note?.toLowerCase().trim() === (res.note || "").toLowerCase().trim() &&
-                      t.date === (res.date || new Date().toISOString().split('T')[0]))
-                  );
+                      t.date === (res.date || new Date().toISOString().split('T')[0]) &&
+                      (t.note || "").toLowerCase().includes((res.note || "").toLowerCase().trim());
+                  });
 
                   return (
                     <tr key={idx} className={`group transition-colors ${isDuplicate ? 'bg-orange-500/5' : 'hover:bg-accent/5'}`}>
