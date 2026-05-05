@@ -184,12 +184,13 @@ export function formatDate(raw: string): string {
   const monthRegex = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
   const monthMatch = clean.match(monthRegex);
   const dayMatch = clean.match(/\b(\d{1,2})\b/);
-  const yearMatch = clean.match(/\b(20\d{2})\b/);
+  const yearMatch = clean.match(/\b(20\d{2}|\d{2})\b/);
 
   if (monthMatch && dayMatch && yearMatch) {
     const m = monthMap[monthMatch[0].toLowerCase().substring(0, 3)];
     const d = dayMatch[1].padStart(2, '0');
-    const y = yearMatch[1];
+    let y = yearMatch[1];
+    if (y.length === 2) y = `20${y}`;
     return `${y}-${m}-${d}`;
   }
 
@@ -206,7 +207,7 @@ function formatTime(raw: string): string {
   if (!raw) return "";
   // Handle cases where AM/PM might be misread or spaces added
   const cleanRaw = raw.replace(/es on N/gi, 'AM').replace(/\s+/g, ' '); 
-  const match = cleanRaw.match(/(\d{1,2})\s*[:\.]\s*(\d{2})\s*(AM|PM|am|pm)?/i);
+  const match = cleanRaw.match(/(\d{1,2})\s*[:\.\s]\s*(\d{2})\s*(AM|PM|am|pm)?/i);
   if (!match) return "";
   let [_, hours, mins, ampm] = match;
   let h = parseInt(hours);
@@ -234,7 +235,9 @@ function detectCategory(text: string): string {
     Travel: ["uber", "ola", "petrol", "fuel", "gas", "taxi", "train", "flight", "indigo", "air", "irctc"],
     Healthcare: ["pharmacy", "medical", "hospital", "doctor", "clinic", "medplus", "apollo"],
     Entertainment: ["movie", "cinema", "theatre", "netflix", "spotify", "game", "bookmyshow"],
+    Shopping: ["amazon", "flipkart", "myntra", "ajio", "nykaa", "meesho", "shopping", "mall", "store"],
     Utilities: ["electricity", "water", "bill", "recharge", "mobile", "internet", "jio", "airtel", "vi", "bsnl"],
+    Savings: ["investment", "mutual fund", "sip", "stocks", "zerodha", "upstox", "groww", "deposit"],
   };
 
   const lower = text.toLowerCase();

@@ -126,11 +126,19 @@ export default function AddTransaction() {
           const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
           
           // Stitch Date: Combine "date" and "year" columns if separate
-          const datePart = String(findVal(['date']) || "");
+          const dateVal = findVal(['date']);
           const yearPart = String(findVal(['year']) || "");
-          // If year is separate, join it. If date already has the year, keep it.
-          const fullDateStr = datePart.length > 8 ? datePart : `${datePart} ${yearPart}`.trim();
-          const date = formatDate(fullDateStr);
+          
+          let date = "";
+          if (typeof dateVal === 'number') {
+            // Excel Serial Date conversion
+            const d = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+            date = d.toISOString().split('T')[0];
+          } else {
+            const datePart = String(dateVal || "");
+            const fullDateStr = datePart.length > 8 ? datePart : `${datePart} ${yearPart}`.trim();
+            date = formatDate(fullDateStr);
+          }
 
           // Extract Time: Strictly look for XX:XX format, otherwise default to "--:--"
           const timeRaw = String(findVal(['time']) || "").trim();
