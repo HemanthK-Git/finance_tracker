@@ -23,6 +23,7 @@ export type Transaction = {
   type: "income" | "expense";
   category: string;
   date: string;
+  time?: string | null;
   note: string | null;
   created_at: any;
   updated_at: any;
@@ -33,6 +34,7 @@ export type TransactionInput = {
   type: "income" | "expense";
   category: string;
   date: string;
+  time?: string | null;
   note?: string | null;
 };
 

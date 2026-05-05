@@ -73,6 +73,7 @@ export default function AddTransaction() {
             amount: res.amount || 0,
             category: res.category || "Other",
             date: res.date || new Date().toISOString().split('T')[0],
+            time: res.time,
             note: `${res.note} ${res.transactionId ? `(ID: ${res.transactionId})` : ''} [${res.source || 'Imported'}]`.trim(),
           }
         });

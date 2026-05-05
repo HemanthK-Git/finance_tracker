@@ -22,6 +22,7 @@ const schema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than 0").max(1_000_000_000),
   category: z.string().min(1, "Pick a category"),
   date: z.date({ required_error: "Pick a date" }),
+  time: z.string().optional(),
   note: z.string().max(200).optional(),
 });
 
@@ -43,6 +44,7 @@ export function TransactionForm({
       amount: scannedData?.amount ?? undefined as any,
       category: scannedData?.category ?? "Food",
       date: scannedData?.date ? new Date(scannedData.date) : new Date(),
+      time: scannedData?.time || "",
       note: scannedData?.note || (scannedData ? "Scanned from receipt" : ""),
     },
   });
@@ -54,6 +56,7 @@ export function TransactionForm({
         amount: Number(initial.amount),
         category: initial.category,
         date: new Date(initial.date),
+        time: initial.time || "",
         note: initial.note ?? "",
       });
     }
@@ -66,6 +69,7 @@ export function TransactionForm({
         amount: scannedData.amount as any,
         category: scannedData.category || "Food",
         date: scannedData.date ? new Date(scannedData.date) : new Date(),
+        time: scannedData.time || "",
         note: scannedData.note || "Scanned from receipt",
       });
     }
@@ -79,6 +83,7 @@ export function TransactionForm({
       amount: Number(v.amount),
       category: v.category,
       date: format(v.date, "yyyy-MM-dd"),
+      time: v.time || null,
       note: v.note?.trim() || null,
     });
   });
