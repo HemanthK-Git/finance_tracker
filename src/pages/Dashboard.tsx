@@ -4,7 +4,7 @@ import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, Inbox } from "lucide
 import { useTransactions } from "@/hooks/useTransactions";
 import { StatCard } from "@/components/StatCard";
 import { PeriodPicker, type Period } from "@/components/PeriodPicker";
-import { CategoryPie, MonthlyBars } from "@/components/Charts";
+import { CategoryPie, MonthlyTrends } from "@/components/Charts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CATEGORY_COLORS, formatINR, type Category } from "@/lib/constants";
@@ -97,7 +97,7 @@ export default function Dashboard() {
         <div className="md:col-span-1 lg:col-span-3 rounded-2xl border bg-card p-5 shadow-soft">
           <h2 className="font-display font-semibold text-lg">Monthly trends</h2>
           <p className="text-xs text-muted-foreground mb-3">Income vs expenses · {period.year}</p>
-          {isLoading ? <Skeleton className="h-[280px] rounded-xl" /> : <MonthlyBars data={txns} year={period.year} />}
+          {isLoading ? <Skeleton className="h-[280px] rounded-xl" /> : <MonthlyTrends data={txns} year={period.year} />}
         </div>
       </div>
 
