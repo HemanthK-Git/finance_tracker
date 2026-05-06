@@ -40,6 +40,8 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
+        env:
+          VITE_BASE_PATH: /finance_tracker/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
