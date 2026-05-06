@@ -36,11 +36,20 @@ export default function Dashboard() {
   const expense = filtered.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
   const savings = income - expense;
   const savingsRate = income > 0 ? Math.round((savings / income) * 100) : 0;
-
-  const totalBalance = txns.reduce((acc, t) => {
-    const amt = Number(t.amount);
-    return t.type === "income" ? acc + amt : acc - amt;
-  }, 0);
+  const totalBalance = useMemo(() => {
+    return txns.reduce((acc, t) => {
+      const d = new Date(t.date);
+      const isPastOrCurrent = d.getFullYear() < period.year || 
+        (d.getFullYear() === period.year && (
+          period.mode === "year" || 
+          d.getMonth() <= period.month
+        ));
+      
+      if (!isPastOrCurrent) return acc;
+      const amt = Number(t.amount);
+      return t.type === "income" ? acc + amt : acc - amt;
+    }, 0);
+  }, [txns, period]);
 
   const recent = txns.slice(0, 5);
 
@@ -65,7 +74,13 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Balance" value={totalBalance} icon={Wallet} variant="balance" hint="Total balance" />
+          <StatCard 
+            label="Balance" 
+            value={totalBalance} 
+            icon={Wallet} 
+            variant="balance" 
+            hint={`End of ${period.mode === "month" ? format(new Date(period.year, period.month), "MMM") : period.year}`} 
+          />
           <StatCard label="Income" value={income} icon={TrendingUp} variant="income" />
           <StatCard label="Expenses" value={expense} icon={TrendingDown} variant="expense" />
           <StatCard label="Savings" value={savings} icon={PiggyBank} variant="savings" hint={income > 0 ? `${savingsRate}% of income` : "Add income to track"} />
