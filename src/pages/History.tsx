@@ -235,11 +235,11 @@ export default function History() {
         )}
       </div>
 
-      <AlertDialog open={!!toDelete || selectedIds.size > 0 && bulkDeleting} onOpenChange={(o) => { if (!o) { setToDelete(null); setBulkDeleting(false); } }}>
+      <AlertDialog open={!!toDelete || (selectedIds.size > 0 && bulkDeleting)} onOpenChange={(o) => { if (!o) { setToDelete(null); setBulkDeleting(false); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {selectedIds.size > 0 ? `Delete ${selectedIds.size} transactions?` : "Delete this transaction?"}
+              {toDelete ? "Delete this transaction?" : `Delete ${selectedIds.size} transactions?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. All selected records will be permanently removed.
@@ -249,7 +249,7 @@ export default function History() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={selectedIds.size > 0 ? handleBulkDelete : () => { if (toDelete) { del.mutate(toDelete); setToDelete(null); } }}
+              onClick={toDelete ? () => { del.mutate(toDelete); setToDelete(null); } : handleBulkDelete}
             >
               {del.isPending || bulkDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>

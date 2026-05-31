@@ -165,7 +165,6 @@ function detectSource(text: string): string {
   if (low.includes('hdfc')) return 'HDFC';
   if (low.includes('icici')) return 'ICICI';
   if (low.includes('axis')) return 'Axis';
-  if (low.includes('axis')) return 'Axis';
   return 'Bank Statement';
 }
 

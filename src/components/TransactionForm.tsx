@@ -41,7 +41,7 @@ export function TransactionForm({
     resolver: zodResolver(schema),
     defaultValues: {
       type: scannedData?.type ?? "expense",
-      amount: scannedData?.amount ?? undefined as any,
+      amount: scannedData?.amount ?? undefined,
       category: scannedData?.category ?? "Food",
       date: scannedData?.date ? new Date(scannedData.date) : new Date(),
       time: scannedData?.time || "",
@@ -60,20 +60,20 @@ export function TransactionForm({
         note: initial.note ?? "",
       });
     }
-  }, [initial]);
+  }, [initial, form]);
 
   useEffect(() => {
     if (scannedData) {
       form.reset({
         type: scannedData.type || "expense",
-        amount: scannedData.amount as any,
+        amount: scannedData.amount ?? 0,
         category: scannedData.category || "Food",
         date: scannedData.date ? new Date(scannedData.date) : new Date(),
         time: scannedData.time || "",
         note: scannedData.note || "Scanned from receipt",
       });
     }
-  }, [scannedData]);
+  }, [scannedData, form]);
 
   const type = form.watch("type");
 
@@ -95,7 +95,7 @@ export function TransactionForm({
         <ToggleGroup
           type="single"
           value={type}
-          onValueChange={(v) => v && form.setValue("type", v as any)}
+          onValueChange={(v) => v && form.setValue("type", v as "income" | "expense")}
           className="grid grid-cols-2 gap-2"
         >
           <ToggleGroupItem

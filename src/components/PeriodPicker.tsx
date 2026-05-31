@@ -11,7 +11,7 @@ export function PeriodPicker({ value, onChange }: { value: Period; onChange: (p:
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <Select value={value.mode} onValueChange={(v) => onChange({ ...value, mode: v as any })}>
+      <Select value={value.mode} onValueChange={(v) => onChange({ ...value, mode: v as Period["mode"] })}>
         <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="day">Daily</SelectItem>

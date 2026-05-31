@@ -7,21 +7,18 @@ import { Button } from "@/components/ui/button";
 import { scanReceipt, parseMultipleTransactions, formatDate, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet } from "lucide-react";
 
 export default function AddTransaction() {
   const [params] = useSearchParams();
   const editId = params.get("id");
-  const { data: txns = [] } = useTransactions();
-  const initial = editId ? txns.find((t) => t.id === editId) ?? null : null;
+  const { data: transactions = [] } = useTransactions();
+  const initial = editId ? transactions.find((t) => t.id === editId) ?? null : null;
   const navigate = useNavigate();
   const upsert = useUpsertTransaction();
 
   const [scanning, setScanning] = useState(false);
   const [scannedResults, setScannedResults] = useState<ScannedData[]>([]);
   const [debugText, setDebugText] = useState<string>("");
-
-  const { data: transactions = [] } = useTransactions();
 
   const handleBulkAdd = async () => {
     setScanning(true);
