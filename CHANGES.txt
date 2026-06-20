@@ -52,13 +52,31 @@ WHAT WAS FIXED AND CHANGED
 12. CATEGORY DETECTION FOR EXCEL (AddTransaction.tsx + lib/ocr.ts)
     - Old: Excel imports had no category (defaulted to "Other")
     - Fix: now runs detectCategory() on the note/person field
-    - Added keywords: bakers, pan, wok, kitchen, choco, kirana (Food)
-      rapido, metro, oyo, road transport, parking (Travel)
-      zudio, ikea, haier, salon, traders, trading (Shopping)
-      fiber, fibre, networks, postpaid (Utilities)
+      matching keywords against the payee/note text:
+
+      Food:      restaurant, hotel, cafe, food, burger, pizza, coffee, lunch,
+                 dinner, grocery, groceries, mart, swiggy, zomato, vending,
+                 bakery, bakers, sweet, sweets, tea, stall, dry fruit, pan,
+                 wok, kitchen, choco, kirana
+      Rent:      rent, lease, apartment
+      Travel:    uber, ola, petrol, fuel, gas, taxi, train, flight, indigo,
+                 air, irctc, apsrtc, rtc, bus, airline, railway, rapido,
+                 metro, oyo, road transport, parking
+      Healthcare: pharmacy, medical, hospital, doctor, clinic, medplus, apollo
+      Entertain: movie, cinema, theatre, netflix, spotify, game, bookmyshow
+      Shopping:  amazon, flipkart, myntra, ajio, nykaa, meesho, shopping,
+                 mall, store, marketings, xerox, zudio, ikea, haier, salon,
+                 traders, trading
+      Utilities: electricity, water, bill, recharge, mobile, internet, jio,
+                 airtel, vi, bsnl, eazypay, fiber, fibre, networks, postpaid
+      Savings:   investment, mutual fund, sip, stocks, zerodha, upstox,
+                 groww, deposit
+
+    - Income type transactions → category "Income"
+    - Person names that don't match any keyword → "Other"
 
 13. SAMPLE CSV FILES ADDED
-    - public/samples/april-statement.csv (141 transactions)
-    - public/samples/may-statement.csv (70 transactions)
-    - public/samples/june-statement.csv (50 transactions)
-    - Format: Date, Time, Year, Person, Amount, Type, Transaction ID
+    - excel/april-statement.csv (141 transactions)
+    - excel/may-statement.csv (70 transactions)
+    - excel/june-statement.csv (50 transactions)
+    - Columns: Date, Time, Year, Person, Amount (INR), Type (Debit/Credit), Transaction ID
