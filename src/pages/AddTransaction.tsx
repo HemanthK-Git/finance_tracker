@@ -106,8 +106,8 @@ export default function AddTransaction() {
     try {
       const reader = new FileReader();
       reader.onload = (evt) => {
-        const data = evt.target?.result;
-        const wb = XLSX.read(data, { type: "array" });
+        const buf = evt.target?.result;
+        const wb = XLSX.read(buf, { type: "array" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
