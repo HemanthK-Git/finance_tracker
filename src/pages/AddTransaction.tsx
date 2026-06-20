@@ -229,84 +229,66 @@ export default function AddTransaction() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-4 pb-16">
+    <div className="max-w-xl mx-auto space-y-3 pb-12">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back
         </Button>
       </div>
 
-
       {!editId && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* LEFT: Excel Upload */}
-            <div className="rounded-xl border bg-card p-4 space-y-3 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-smooth flex flex-col justify-center">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
-                  <FileSpreadsheet className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold tracking-tight">Excel / CSV Document</h3>
-                  <p className="text-[9px] text-muted-foreground">Upload statement history</p>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="rounded-lg border bg-card p-3 space-y-2 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-smooth flex flex-col justify-center">
+            <div className="flex items-center gap-1.5">
+              <div className="h-6 w-6 rounded-md bg-green-500/10 flex items-center justify-center text-green-600">
+                <FileSpreadsheet className="h-3.5 w-3.5" />
               </div>
-              <div className="border-2 border-dashed border-accent/30 rounded-lg p-5 flex flex-col items-center justify-center text-center gap-1 group-hover:border-green-500/30 transition-colors">
-                <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Click or Drag File</div>
-                <p className="text-[8px] text-muted-foreground">Supports .xlsx, .xls, .csv</p>
+              <div>
+                <h3 className="text-[10px] font-bold tracking-tight">Excel / CSV</h3>
+                <p className="text-[8px] text-muted-foreground">Upload statement</p>
               </div>
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleExcelUpload}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
+            </div>
+            <div className="border border-dashed border-accent/30 rounded-md p-3 flex flex-col items-center justify-center text-center gap-0.5 group-hover:border-green-500/30 transition-colors">
+              <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Click or Drag</div>
+              <p className="text-[7px] text-muted-foreground">.xlsx, .xls, .csv</p>
+            </div>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
 
-          {/* RIGHT: Smart Text Import */}
-          <div className="rounded-xl border bg-card p-4 shadow-elegant space-y-3 animate-in fade-in zoom-in-95 duration-500">
+          <div className="rounded-lg border bg-card p-3 shadow-elegant space-y-2 animate-in fade-in zoom-in-95 duration-500">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <ClipboardPaste className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                  <ClipboardPaste className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold tracking-tight">Smart Text Import</h3>
-                  <p className="text-[9px] text-muted-foreground">Paste history text from bank</p>
+                  <h3 className="text-[10px] font-bold tracking-tight">Text Import</h3>
+                  <p className="text-[8px] text-muted-foreground">Paste bank text</p>
                 </div>
               </div>
               {scannedResults.length > 0 && (
-                <div className="bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full">
-                  {scannedResults.length} Items
-                </div>
+                <div className="bg-primary/10 text-primary text-[8px] font-bold px-1.5 py-0.5 rounded-full">{scannedResults.length}</div>
               )}
             </div>
-
             <div className="relative group">
               <textarea
                 placeholder="Paste here... (e.g. Apr 04, Paid to Munish, INR 10.00)"
-                className="w-full h-24 p-3 text-[11px] font-mono rounded-lg border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
+                className="w-full h-16 p-2 text-[10px] font-mono rounded-md border bg-accent/5 focus:bg-background focus:ring-1 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
                 id="manual-text-import"
                 onChange={(e) => {
                   const text = e.target.value;
                   if (text.length > 20) {
-                    const results = parseMultipleTransactions(text);
-                    setScannedResults(results);
+                    setScannedResults(parseMultipleTransactions(text));
                   }
                 }}
               />
-              <div className="absolute bottom-3 right-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 text-[9px] bg-background/80"
+              <div className="absolute bottom-1.5 right-1.5">
+                <Button variant="outline" size="sm" className="h-5 text-[8px] bg-background/80 px-1.5"
                   onClick={() => {
                     const el = document.getElementById('manual-text-import') as HTMLTextAreaElement;
                     if (el) el.value = '';
                     setScannedResults([]);
-                  }}
-                >
-                  Clear
-                </Button>
+                  }}>Clear</Button>
               </div>
             </div>
           </div>
@@ -314,57 +296,42 @@ export default function AddTransaction() {
       )}
 
       {scannedResults.length > 1 && (
-        <div className="rounded-xl border bg-card p-4 shadow-elegant animate-in slide-in-from-top-4 duration-500">
-          <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
-            <Scan className="h-4 w-4 text-primary" /> Review {scannedResults.length} Transactions
+        <div className="rounded-lg border bg-card p-3 shadow-elegant animate-in slide-in-from-top-4 duration-500">
+          <h2 className="font-bold text-[11px] mb-2 flex items-center gap-1.5">
+            <Scan className="h-3.5 w-3.5 text-primary" /> {scannedResults.length} Transactions
           </h2>
-          <div className="overflow-x-auto -mx-4 px-4 mb-4">
-            <table className="w-full text-left border-collapse border-spacing-0">
+          <div className="overflow-x-auto -mx-3 px-3 mb-3">
+            <table className="w-full text-left">
               <thead>
-                <tr className="text-[9px] uppercase tracking-widest text-muted-foreground border-b border-accent/20">
-                  <th className="py-1.5 pr-3 font-bold">Date / Time</th>
-                  <th className="py-1.5 pr-3 font-bold">Details</th>
-                  <th className="py-1.5 pr-3 font-bold">Category</th>
-                  <th className="py-1.5 text-right font-bold">Amount</th>
+                <tr className="text-[8px] uppercase tracking-widest text-muted-foreground border-b border-accent/20">
+                  <th className="py-1 pr-2 font-bold">Date</th>
+                  <th className="py-1 pr-2 font-bold">Details</th>
+                  <th className="py-1 pr-2 font-bold">Cat</th>
+                  <th className="py-1 text-right font-bold">Amt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-accent/10">
                 {scannedResults.map((res, idx) => {
                   const dateObj = res.date ? new Date(res.date) : new Date();
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
                   return (
-                    <tr key={`${res.note}-${res.amount}-${res.date}-${idx}`} className="group transition-colors hover:bg-accent/5">
-                      <td className="py-2 pr-3 align-top">
-                        <div className="text-xs font-medium whitespace-nowrap">{formattedDate}</div>
-                        <div className="text-[9px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
+                    <tr key={`${res.note}-${res.amount}-${res.date}-${idx}`} className="group hover:bg-accent/5">
+                      <td className="py-1 pr-2 align-top">
+                        <div className="text-[10px] font-medium whitespace-nowrap">{formattedDate}</div>
+                        <div className="text-[8px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
                       </td>
-                      <td className="py-2 pr-3 align-top">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="text-xs font-semibold group-hover:text-primary transition-colors line-clamp-1">{res.note}</div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <div className={`text-[9px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                              {res.type}
-                            </div>
-                            {res.transactionId && (
-                              <span className="text-[8px] bg-muted text-muted-foreground px-1 py-0.5 rounded font-mono truncate max-w-[120px]">
-                                ID: {res.transactionId}
-                              </span>
-                            )}
-                            {res.source && (
-                              <span className="text-[8px] bg-primary/5 text-primary px-1 py-0.5 rounded border border-primary/10 font-medium">
-                                {res.source}
-                              </span>
-                            )}
-                          </div>
+                      <td className="py-1 pr-2 align-top">
+                        <div className="text-[10px] font-semibold group-hover:text-primary transition-colors line-clamp-1">{res.note}</div>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className={`text-[8px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>{res.type}</span>
+                          {res.transactionId && <span className="text-[7px] bg-muted text-muted-foreground px-1 rounded font-mono truncate max-w-[80px]">{res.transactionId}</span>}
+                          {res.source && <span className="text-[7px] bg-primary/5 text-primary px-1 rounded border border-primary/10">{res.source}</span>}
                         </div>
                       </td>
-                      <td className="py-2 pr-3 align-top">
-                        <span className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded-full border border-primary/10 font-medium whitespace-nowrap">
-                          {res.category || "Other"}
-                        </span>
+                      <td className="py-1 pr-2 align-top">
+                        <span className="text-[8px] bg-primary/5 text-primary px-1.5 rounded-full border border-primary/10 font-medium">{res.category || "Other"}</span>
                       </td>
-                      <td className={`py-2 align-top text-right font-mono font-bold text-xs ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                      <td className={`py-1 align-top text-right font-mono font-bold text-[10px] ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
                         {res.type === 'income' ? '+' : '-'}₹{res.amount}
                       </td>
                     </tr>
@@ -373,37 +340,30 @@ export default function AddTransaction() {
               </tbody>
             </table>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-9 text-xs shadow-glow">
-              Add New Transactions
-            </Button>
-            <Button variant="outline" onClick={() => setScannedResults([])} className="h-9 px-4 text-xs">
-              Clear
-            </Button>
+          <div className="flex gap-1.5">
+            <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-7 text-[10px] shadow-glow">Add New</Button>
+            <Button variant="outline" onClick={() => setScannedResults([])} className="h-7 px-3 text-[10px]">Clear</Button>
           </div>
         </div>
       )}
 
       {debugText && (
-        <div className="p-3 bg-muted rounded-xl text-[10px] font-mono text-muted-foreground whitespace-pre-wrap max-h-32 overflow-auto border">
-          <p className="font-bold mb-1 uppercase tracking-widest text-[8px]">Scanner Intelligence Output:</p>
+        <div className="p-2 bg-muted rounded-lg text-[9px] font-mono text-muted-foreground whitespace-pre-wrap max-h-24 overflow-auto border">
+          <p className="font-bold mb-0.5 uppercase tracking-widest text-[7px]">Scanner Output:</p>
           {debugText}
         </div>
       )}
 
-      <div className="rounded-xl border bg-card p-4 shadow-soft">
-        <h1 className="font-bold text-base mb-0.5">{editId ? "Edit transaction" : "Add transaction"}</h1>
-        <p className="text-muted-foreground text-xs mb-4">{editId ? "Update the details below." : "Record a new income or expense."}</p>
+      <div className="rounded-lg border bg-card p-3 shadow-soft">
+        <h1 className="font-bold text-sm mb-0.5">{editId ? "Edit" : "Add transaction"}</h1>
+        <p className="text-muted-foreground text-[10px] mb-2">{editId ? "Update details." : "Record income or expense."}</p>
         <TransactionForm
           initial={initial}
           scannedData={scannedResults.length === 1 ? scannedResults[0] : null}
           submitting={upsert.isPending}
-          submitLabel={editId ? "Update Transaction" : "Add Transaction"}
+          submitLabel={editId ? "Update" : "Add"}
           onSubmit={(input) =>
-            upsert.mutate(
-              { id: editId ?? undefined, input },
-              { onSuccess: () => navigate("/history") }
-            )
+            upsert.mutate({ id: editId ?? undefined, input }, { onSuccess: () => navigate("/history") })
           }
         />
       </div>
