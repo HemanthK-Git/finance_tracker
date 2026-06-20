@@ -1,0 +1,64 @@
+WHAT WAS FIXED AND CHANGED
+===========================
+
+1. DUPLICATE DETECTION BUG (AddTransaction.tsx)
+   - Old: bulk-add only checked against existing DB transactions (stale snapshot)
+   - Fix: now tracks items added within the same batch so duplicates in one Excel
+     file are also caught and skipped
+   - UI also shows duplicate warnings for same-batch duplicates now
+
+2. USE TOAST LISTENER LEAK (hooks/use-toast.ts)
+   - Old: useEffect had [state] as dependency, causing listener to re-register
+     on every state change = memory leak
+   - Fix: changed dependency to [] (empty)
+
+3. DATE.NOW() AS REACT KEY (AddTransaction.tsx)
+   - Old: key={Date.now()} on TransactionForm forced full remount every render
+   - Fix: removed, since scannedData prop already controls form reset via effect
+
+4. DUAL TOAST SYSTEMS (App.tsx)
+   - Old: both Radix <Toaster /> and Sonner <Sonner /> were rendered
+   - Fix: removed Radix Toaster, kept only Sonner (all toast() calls use Sonner)
+
+5. ARRAY INDEX AS REACT KEY (AddTransaction.tsx)
+   - Old: key={idx} (array index) in scanned results table
+   - Fix: key={`${note}-${amount}-${date}-${idx}`} (stable composite key)
+
+6. DEPRECATED readAsBinaryString (AddTransaction.tsx)
+   - Old: reader.readAsBinaryString(file) - deprecated File API
+   - Fix: reader.readAsArrayBuffer(file) with XLSX.read(type: "array")
+
+7. EMPTY CATCH BLOCK (lib/ocr.ts)
+   - Old: catch(e) {} - silently swallowed date parsing errors
+   - Fix: added console.warn to log the error
+
+8. BULK DELETE ABORTS ON FIRST FAILURE (History.tsx)
+   - Old: for loop with await - if one delete failed, remaining were skipped
+   - Fix: Promise.allSettled with failure count toast
+
+9. COMPETING USEEFFECT HOOKS (TransactionForm.tsx)
+   - Old: two separate useEffect both calling form.reset() = race condition
+   - Fix: merged into one effect with if/else
+
+10. USEISMOBILE INITIAL UNDEFINED (hooks/use-mobile.tsx)
+    - Old: useState<boolean | undefined>(undefined)
+    - Fix: useState(false)
+
+11. UNUSED IMPORTS REMOVED
+    - AddTransaction.tsx: Loader2, FileImage, scanReceipt
+    - History.tsx: CheckSquare, Square
+    - useTransactions.ts: orderBy, Timestamp
+
+12. CATEGORY DETECTION FOR EXCEL (AddTransaction.tsx + lib/ocr.ts)
+    - Old: Excel imports had no category (defaulted to "Other")
+    - Fix: now runs detectCategory() on the note/person field
+    - Added keywords: bakers, pan, wok, kitchen, choco, kirana (Food)
+      rapido, metro, oyo, road transport, parking (Travel)
+      zudio, ikea, haier, salon, traders, trading (Shopping)
+      fiber, fibre, networks, postpaid (Utilities)
+
+13. SAMPLE CSV FILES ADDED
+    - public/samples/april-statement.csv (141 transactions)
+    - public/samples/may-statement.csv (70 transactions)
+    - public/samples/june-statement.csv (50 transactions)
+    - Format: Date, Time, Year, Person, Amount, Type, Transaction ID
