@@ -116,10 +116,11 @@ export default function AddTransaction() {
           return;
         }
 
-        const results: ScannedData[] = rows.map((row: any) => {
-          const findVal = (keys: string[]) => {
+        const results: ScannedData[] = rows.map((row: Record<string, unknown>) => {
+          const findVal = (keys: string[]): string | null => {
             const key = Object.keys(row).find(k => keys.some(s => k.toLowerCase().includes(s)));
-            return key ? row[key] : null;
+            const val = key ? row[key] : undefined;
+            return val !== null && val !== undefined ? String(val) : null;
           };
 
           const amountRaw = findVal(['amount', 'inr', 'value', 'total', 'debit', 'credit']);
