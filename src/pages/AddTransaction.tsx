@@ -103,41 +103,42 @@ export default function AddTransaction() {
     if (!file) return;
 
     setScanning(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const buf = evt.target?.result;
-        const wb = XLSX.read(buf, { type: "array" });
+    const reader = new FileReader();
+    reader.onerror = () => {
+      toast.error("Failed to read file.");
+      setScanning(false);
+    };
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const rows = XLSX.utils.sheet_to_json(ws);
 
-        if (data.length === 0) {
+        if (rows.length === 0) {
           toast.error("The Excel sheet seems to be empty.");
+          setScanning(false);
           return;
         }
 
-        const results: ScannedData[] = data.map((row: any) => {
-          // Intelligent column mapping
+        const results: ScannedData[] = rows.map((row: any) => {
           const findVal = (keys: string[]) => {
             const key = Object.keys(row).find(k => keys.some(s => k.toLowerCase().includes(s)));
             return key ? row[key] : null;
           };
 
-          // Precise column mapping: Priority search for Amount
           const amountRaw = findVal(['amount', 'inr', 'value', 'total', 'debit', 'credit']);
           const amount = Math.abs(parseFloat(String(amountRaw || 0).replace(/[^\d.-]/g, '')));
           
           const note = String(findVal(['person', 'particulars', 'description', 'details', 'note', 'payee', 'merchant', 'sent', 'received']) || "Excel Transaction").trim();
           const ref = String(findVal(['transaction id', 'ref', 'utr', 'id']) || "");
           
-          // Stitch Date: Combine "date" and "year" columns if separate
           const dateVal = findVal(['date']);
           const yearPart = String(findVal(['year']) || "");
           
           let date = "";
           if (typeof dateVal === 'number') {
-            // Excel Serial Date conversion
             const d = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
             date = d.toISOString().split('T')[0];
           } else {
@@ -146,12 +147,10 @@ export default function AddTransaction() {
             date = formatDate(fullDateStr);
           }
 
-          // Extract Time: Strictly look for XX:XX format, otherwise default to "--:--"
           const timeRaw = String(findVal(['time']) || "").trim();
           const timeMatch = timeRaw.match(/\d{1,2}:\d{2}(?:\s*[AP]M)?/i);
           const time = timeMatch ? timeMatch[0] : "--:--";
 
-          // Determine type: Explicitly check for Debit/Credit column
           let type: "income" | "expense" = "expense";
           const typeHeader = String(findVal(['type', 'direction', 'dr/cr', 'debit/credit']) || "").toLowerCase();
           const noteLow = note.toLowerCase();
@@ -175,14 +174,14 @@ export default function AddTransaction() {
         });
 
         setScannedResults(results);
+        setScanning(false);
         toast.success(`Loaded ${results.length} rows from Excel!`);
-      };
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      toast.error("Failed to read Excel file.");
-    } finally {
-      setScanning(false);
-    }
+      } catch (error) {
+        toast.error("Failed to parse Excel file.");
+        setScanning(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   return (
