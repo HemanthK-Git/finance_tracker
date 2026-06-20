@@ -177,7 +177,7 @@ export default function AddTransaction() {
         setScannedResults(results);
         toast.success(`Loaded ${results.length} rows from Excel!`);
       };
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       toast.error("Failed to read Excel file.");
     } finally {
