@@ -80,8 +80,14 @@ WHAT WAS FIXED AND CHANGED
     - Fix: CSV files → readAsText + type: "string"
           XLSX/XLS files → readAsArrayBuffer + Uint8Array + type: "array"
 
-14. SAMPLE CSV FILES ADDED
+14. CATEGORY COLUMN IN CSV (AddTransaction.tsx + CSV files)
+    - New: parser looks for a "Category" column in the sheet
+    - If present and non-empty, uses it directly; otherwise falls back to detectCategory()
+    - Sample CSVs updated with Category column header
+    - june-statement.csv has pre-filled categories for all 50 rows
+
+15. SAMPLE CSV FILES ADDED
     - excel/april-statement.csv (141 transactions)
     - excel/may-statement.csv (70 transactions)
     - excel/june-statement.csv (50 transactions)
-    - Columns: Date, Time, Year, Person, Amount (INR), Type (Debit/Credit), Transaction ID
+    - Columns: Date, Time, Year, Person, Amount (INR), Type (Debit/Credit), Transaction ID, Category

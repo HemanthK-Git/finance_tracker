@@ -156,13 +156,18 @@ export default function AddTransaction() {
             type = "expense";
           }
 
+          const categoryRaw = findVal(['category', 'categories']);
+          const category = categoryRaw && categoryRaw.trim()
+            ? categoryRaw.trim()
+            : (type === "income" ? "Income" : detectCategory(note));
+
           return {
             amount,
             type,
             note,
             date,
             time: time === "AM" || time === "PM" ? "--:--" : time,
-            category: type === "income" ? "Income" : detectCategory(note),
+            category,
             transactionId: ref.trim(),
             source: file.name.substring(0, 15)
           };
