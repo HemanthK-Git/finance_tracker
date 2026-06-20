@@ -229,7 +229,7 @@ export default function AddTransaction() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 pb-20">
+    <div className="max-w-xl mx-auto space-y-4 pb-16">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
@@ -238,22 +238,22 @@ export default function AddTransaction() {
 
 
       {!editId && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* LEFT: Excel Upload */}
-          <div className="rounded-2xl border bg-card p-6 space-y-4 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-smooth flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-600">
-                <FileSpreadsheet className="h-5 w-5" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* LEFT: Excel Upload */}
+            <div className="rounded-xl border bg-card p-4 space-y-3 shadow-elegant border-dashed relative group hover:bg-accent/5 transition-smooth flex flex-col justify-center">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
+                  <FileSpreadsheet className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold tracking-tight">Excel / CSV Document</h3>
+                  <p className="text-[9px] text-muted-foreground">Upload statement history</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold tracking-tight">Excel / CSV Document</h3>
-                <p className="text-[10px] text-muted-foreground">Upload statement history</p>
+              <div className="border-2 border-dashed border-accent/30 rounded-lg p-5 flex flex-col items-center justify-center text-center gap-1 group-hover:border-green-500/30 transition-colors">
+                <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Click or Drag File</div>
+                <p className="text-[8px] text-muted-foreground">Supports .xlsx, .xls, .csv</p>
               </div>
-            </div>
-            <div className="border-2 border-dashed border-accent/30 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2 group-hover:border-green-500/30 transition-colors">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Click or Drag File</div>
-              <p className="text-[9px] text-muted-foreground">Supports .xlsx, .xls, .csv</p>
-            </div>
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
@@ -263,19 +263,19 @@ export default function AddTransaction() {
           </div>
 
           {/* RIGHT: Smart Text Import */}
-          <div className="rounded-2xl border bg-card p-6 shadow-elegant space-y-4 animate-in fade-in zoom-in-95 duration-500">
+          <div className="rounded-xl border bg-card p-4 shadow-elegant space-y-3 animate-in fade-in zoom-in-95 duration-500">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <ClipboardPaste className="h-5 w-5" />
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <ClipboardPaste className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold tracking-tight">Smart Text Import</h3>
-                  <p className="text-[10px] text-muted-foreground">Paste history text from bank</p>
+                  <h3 className="text-xs font-bold tracking-tight">Smart Text Import</h3>
+                  <p className="text-[9px] text-muted-foreground">Paste history text from bank</p>
                 </div>
               </div>
               {scannedResults.length > 0 && (
-                <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
+                <div className="bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full">
                   {scannedResults.length} Items
                 </div>
               )}
@@ -284,7 +284,7 @@ export default function AddTransaction() {
             <div className="relative group">
               <textarea
                 placeholder="Paste here... (e.g. Apr 04, Paid to Munish, INR 10.00)"
-                className="w-full h-32 p-4 text-xs font-mono rounded-xl border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
+                className="w-full h-24 p-3 text-[11px] font-mono rounded-lg border bg-accent/5 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none border-dashed group-hover:border-primary/50"
                 id="manual-text-import"
                 onChange={(e) => {
                   const text = e.target.value;
@@ -314,18 +314,18 @@ export default function AddTransaction() {
       )}
 
       {scannedResults.length > 1 && (
-        <div className="rounded-2xl border bg-card p-5 shadow-elegant animate-in slide-in-from-top-4 duration-500">
-          <h2 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
-            <Scan className="h-5 w-5 text-primary" /> Review {scannedResults.length} Transactions
+        <div className="rounded-xl border bg-card p-4 shadow-elegant animate-in slide-in-from-top-4 duration-500">
+          <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <Scan className="h-4 w-4 text-primary" /> Review {scannedResults.length} Transactions
           </h2>
-          <div className="overflow-x-auto -mx-5 px-5 mb-6">
+          <div className="overflow-x-auto -mx-4 px-4 mb-4">
             <table className="w-full text-left border-collapse border-spacing-0">
               <thead>
-                <tr className="text-[10px] uppercase tracking-widest text-muted-foreground border-b border-accent/20">
-                  <th className="py-3 pr-4 font-bold">Date / Time</th>
-                  <th className="py-3 pr-4 font-bold">Transaction Details</th>
-                  <th className="py-3 pr-4 font-bold">Category</th>
-                  <th className="py-3 text-right font-bold">Amount</th>
+                <tr className="text-[9px] uppercase tracking-widest text-muted-foreground border-b border-accent/20">
+                  <th className="py-1.5 pr-3 font-bold">Date / Time</th>
+                  <th className="py-1.5 pr-3 font-bold">Details</th>
+                  <th className="py-1.5 pr-3 font-bold">Category</th>
+                  <th className="py-1.5 text-right font-bold">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-accent/10">
@@ -335,36 +335,36 @@ export default function AddTransaction() {
 
                   return (
                     <tr key={`${res.note}-${res.amount}-${res.date}-${idx}`} className="group transition-colors hover:bg-accent/5">
-                      <td className="py-3 pr-4 align-top">
-                        <div className="text-sm font-medium whitespace-nowrap">{formattedDate}</div>
-                        <div className="text-[10px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
+                      <td className="py-2 pr-3 align-top">
+                        <div className="text-xs font-medium whitespace-nowrap">{formattedDate}</div>
+                        <div className="text-[9px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
                       </td>
-                      <td className="py-3 pr-4 align-top">
-                        <div className="flex flex-col gap-1">
-                          <div className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">{res.note}</div>
-                          <div className="flex items-center gap-2">
-                            <div className={`text-[10px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                      <td className="py-2 pr-3 align-top">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="text-xs font-semibold group-hover:text-primary transition-colors line-clamp-1">{res.note}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className={`text-[9px] font-bold uppercase tracking-tighter ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
                               {res.type}
                             </div>
                             {res.transactionId && (
-                              <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">
+                              <span className="text-[8px] bg-muted text-muted-foreground px-1 py-0.5 rounded font-mono truncate max-w-[120px]">
                                 ID: {res.transactionId}
                               </span>
                             )}
                             {res.source && (
-                              <span className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 font-medium">
+                              <span className="text-[8px] bg-primary/5 text-primary px-1 py-0.5 rounded border border-primary/10 font-medium">
                                 {res.source}
                               </span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 pr-4 align-top">
-                        <span className="text-[10px] bg-primary/5 text-primary px-2 py-0.5 rounded-full border border-primary/10 font-medium whitespace-nowrap">
+                      <td className="py-2 pr-3 align-top">
+                        <span className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded-full border border-primary/10 font-medium whitespace-nowrap">
                           {res.category || "Other"}
                         </span>
                       </td>
-                      <td className={`py-3 align-top text-right font-mono font-bold text-sm ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                      <td className={`py-2 align-top text-right font-mono font-bold text-xs ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
                         {res.type === 'income' ? '+' : '-'}₹{res.amount}
                       </td>
                     </tr>
@@ -373,15 +373,13 @@ export default function AddTransaction() {
               </tbody>
             </table>
           </div>
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-3">
-              <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
-                Add New Transactions
-              </Button>
-              <Button variant="outline" onClick={() => setScannedResults([])} className="h-12 px-6">
-                Clear
-              </Button>
-            </div>
+          <div className="flex gap-2">
+            <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-9 text-xs shadow-glow">
+              Add New Transactions
+            </Button>
+            <Button variant="outline" onClick={() => setScannedResults([])} className="h-9 px-4 text-xs">
+              Clear
+            </Button>
           </div>
         </div>
       )}
@@ -393,9 +391,9 @@ export default function AddTransaction() {
         </div>
       )}
 
-      <div className="rounded-2xl border bg-card p-6 sm:p-8 shadow-soft">
-        <h1 className="font-display text-2xl sm:text-3xl font-bold mb-1">{editId ? "Edit transaction" : "Add transaction"}</h1>
-        <p className="text-muted-foreground text-sm mb-6">{editId ? "Update the details below." : "Record a new income or expense."}</p>
+      <div className="rounded-xl border bg-card p-4 shadow-soft">
+        <h1 className="font-bold text-base mb-0.5">{editId ? "Edit transaction" : "Add transaction"}</h1>
+        <p className="text-muted-foreground text-xs mb-4">{editId ? "Update the details below." : "Record a new income or expense."}</p>
         <TransactionForm
           initial={initial}
           scannedData={scannedResults.length === 1 ? scannedResults[0] : null}
