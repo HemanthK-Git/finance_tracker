@@ -324,6 +324,7 @@ export default function AddTransaction() {
                 <tr className="text-[10px] uppercase tracking-widest text-muted-foreground border-b border-accent/20">
                   <th className="py-3 pr-4 font-bold">Date / Time</th>
                   <th className="py-3 pr-4 font-bold">Transaction Details</th>
+                  <th className="py-3 pr-4 font-bold">Category</th>
                   <th className="py-3 text-right font-bold">Amount</th>
                 </tr>
               </thead>
@@ -358,6 +359,11 @@ export default function AddTransaction() {
                           </div>
                         </div>
                       </td>
+                      <td className="py-3 pr-4 align-top">
+                        <span className="text-[10px] bg-primary/5 text-primary px-2 py-0.5 rounded-full border border-primary/10 font-medium whitespace-nowrap">
+                          {res.category || "Other"}
+                        </span>
+                      </td>
                       <td className={`py-3 align-top text-right font-mono font-bold text-sm ${res.type === 'income' ? 'text-income' : 'text-expense'}`}>
                         {res.type === 'income' ? '+' : '-'}₹{res.amount}
                       </td>
@@ -368,22 +374,6 @@ export default function AddTransaction() {
             </table>
           </div>
           <div className="flex flex-col gap-3">
-            {(scannedResults.some((res, idx) =>
-              transactions?.some(t =>
-                (res.transactionId && t.note?.includes(res.transactionId)) ||
-                (t.amount === (res.amount || 0) && t.note === res.note && t.date === res.date)
-              ) ||
-              scannedResults.some((other, oi) =>
-                oi !== idx &&
-                other.amount === res.amount &&
-                other.date === res.date &&
-                (other.note || "").toLowerCase().trim() === (res.note || "").toLowerCase().trim()
-              )
-            )) && (
-                <p className="text-[10px] text-orange-600 font-medium text-center bg-orange-50 p-2 rounded-lg border border-orange-100">
-                  Some transactions above are already in your database or duplicated in this upload and will be skipped.
-                </p>
-              )}
             <div className="flex gap-3">
               <Button onClick={handleBulkAdd} className="flex-1 gradient-primary text-primary-foreground h-12 shadow-glow">
                 Add New Transactions
