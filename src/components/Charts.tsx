@@ -10,22 +10,22 @@ export function CategoryPie({ data }: { data: Transaction[] }) {
   const chartData = Array.from(totals.entries()).map(([name, value]) => ({ name, value }));
 
   if (chartData.length === 0) {
-    return <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">No expenses yet</div>;
+    return <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground">No expenses yet</div>;
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={200}>
       <PieChart>
-        <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
+        <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={85} paddingAngle={2}>
           {chartData.map((d) => (
             <Cell key={d.name} fill={CATEGORY_COLORS[d.name as Category] ?? "hsl(var(--muted))"} stroke="hsl(var(--background))" strokeWidth={2} />
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}
+          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--popover-foreground))" }}
           formatter={(v: number) => formatINR(v)}
         />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -43,17 +43,17 @@ export function MonthlyBars({ data, year }: { data: Transaction[]; year: number 
   });
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={chartData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={chartData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
         <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
         <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
         <Tooltip
-          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}
+          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--popover-foreground))" }}
           formatter={(v: number) => formatINR(v)}
           cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
         />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }} />
         <Bar dataKey="income" fill="hsl(var(--income))" radius={[6,6,0,0]} />
         <Bar dataKey="expense" fill="hsl(var(--expense))" radius={[6,6,0,0]} />
       </BarChart>
@@ -73,8 +73,8 @@ export function MonthlyTrends({ data, year }: { data: Transaction[]; year: numbe
   });
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={200}>
+      <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
         <defs>
           <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="hsl(var(--income))" stopOpacity={0.3} />
@@ -89,10 +89,10 @@ export function MonthlyTrends({ data, year }: { data: Transaction[]; year: numbe
         <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
         <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
         <Tooltip
-          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}
+          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--popover-foreground))" }}
           formatter={(v: number) => formatINR(v)}
         />
-        <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--muted-foreground))", paddingTop: 10 }} />
         <Area
           type="monotone"
           dataKey="income"
