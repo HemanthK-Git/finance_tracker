@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Pencil, Trash2, ArrowUpDown, Plus, Inbox, CheckSquare, Square, X } from "lucide-react";
+import { Search, Pencil, Trash2, ArrowUpDown, Plus, Inbox, X } from "lucide-react";
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -71,8 +71,12 @@ export default function History() {
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      for (const id of Array.from(selectedIds)) {
-        await del.mutateAsync(id);
+      const results = await Promise.allSettled(
+        Array.from(selectedIds).map(id => del.mutateAsync(id))
+      );
+      const failed = results.filter(r => r.status === "rejected");
+      if (failed.length > 0) {
+        toast.error(`${failed.length} deletion(s) failed.`);
       }
       setSelectedIds(new Set());
     } finally {

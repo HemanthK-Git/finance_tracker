@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TransactionForm } from "@/components/TransactionForm";
 import { useTransactions, useUpsertTransaction } from "@/hooks/useTransactions";
-import { ArrowLeft, Scan, Loader2, FileImage, FileSpreadsheet, ClipboardPaste } from "lucide-react";
+import { ArrowLeft, Scan, FileSpreadsheet, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { scanReceipt, parseMultipleTransactions, formatDate, type ScannedData } from "@/lib/ocr";
+import { parseMultipleTransactions, formatDate, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -26,12 +26,12 @@ export default function AddTransaction() {
     let skippedCount = 0;
 
     try {
-      const latestTransactions = transactions || [];
-      
+      const addedEntries: Array<{ amount: number; type: string; date: string; time?: string | null; note: string | null }> = [];
+
       for (const res of scannedResults) {
         let isDuplicate = false;
 
-        for (const t of latestTransactions) {
+        for (const t of [...(transactions || []), ...addedEntries]) {
           // 1. Primary Check: If both have Transaction IDs, they MUST match exactly to be a duplicate
           if (res.transactionId && t.note?.includes(res.transactionId)) {
             isDuplicate = true;
@@ -74,6 +74,14 @@ export default function AddTransaction() {
             note: `${res.note} ${res.transactionId ? `(ID: ${res.transactionId})` : ''} [${res.source || 'Imported'}]`.trim(),
           }
         });
+
+        addedEntries.push({
+          amount: res.amount || 0,
+          type: res.type,
+          date: res.date || new Date().toISOString().split('T')[0],
+          time: res.time,
+          note: `${res.note} ${res.transactionId ? `(ID: ${res.transactionId})` : ''} [${res.source || 'Imported'}]`.trim()
+        });
         addedCount++;
       }
 
@@ -98,8 +106,8 @@ export default function AddTransaction() {
     try {
       const reader = new FileReader();
       reader.onload = (evt) => {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: "binary" });
+        const data = evt.target?.result;
+        const wb = XLSX.read(data, { type: "array" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
@@ -281,22 +289,24 @@ export default function AddTransaction() {
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
                   // Check if this specific item is a duplicate (Match ID + Type + Time)
-                  const isDuplicate = transactions?.some(t => {
-                    // Match ID if present
+                  const isDuplicate = (transactions?.some(t => {
                     if (res.transactionId && t.note?.includes(res.transactionId)) return true;
-                    // If result has ID but t doesn't match it, it's not a duplicate
                     if (res.transactionId && t.note?.includes("ID: ") && !t.note.includes(res.transactionId)) return false;
-                    
-                    // Fallback to strict fields
                     return t.amount === (res.amount || 0) &&
                       t.type === res.type &&
                       t.time === res.time &&
                       t.date === (res.date || new Date().toISOString().split('T')[0]) &&
                       (t.note || "").toLowerCase().includes((res.note || "").toLowerCase().trim());
-                  });
+                  })) || scannedResults.some((other, oi) =>
+                    oi !== idx &&
+                    other.amount === res.amount &&
+                    other.type === res.type &&
+                    other.date === res.date &&
+                    (other.note || "").toLowerCase().trim() === (res.note || "").toLowerCase().trim()
+                  );
 
                   return (
-                    <tr key={idx} className={`group transition-colors ${isDuplicate ? 'bg-orange-500/5' : 'hover:bg-accent/5'}`}>
+                    <tr key={`${res.note}-${res.amount}-${res.date}-${idx}`} className={`group transition-colors ${isDuplicate ? 'bg-orange-500/5' : 'hover:bg-accent/5'}`}>
                       <td className="py-3 pr-4 align-top">
                         <div className="text-sm font-medium whitespace-nowrap">{formattedDate}</div>
                         <div className="text-[10px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
@@ -336,12 +346,20 @@ export default function AddTransaction() {
             </table>
           </div>
           <div className="flex flex-col gap-3">
-            {scannedResults.some(res => transactions?.some(t =>
-              (res.transactionId && t.note?.includes(res.transactionId)) ||
-              (t.amount === (res.amount || 0) && t.note === res.note && t.date === res.date)
+            {(scannedResults.some((res, idx) =>
+              transactions?.some(t =>
+                (res.transactionId && t.note?.includes(res.transactionId)) ||
+                (t.amount === (res.amount || 0) && t.note === res.note && t.date === res.date)
+              ) ||
+              scannedResults.some((other, oi) =>
+                oi !== idx &&
+                other.amount === res.amount &&
+                other.date === res.date &&
+                (other.note || "").toLowerCase().trim() === (res.note || "").toLowerCase().trim()
+              )
             )) && (
                 <p className="text-[10px] text-orange-600 font-medium text-center bg-orange-50 p-2 rounded-lg border border-orange-100">
-                  Some transactions above are already in your database and will be skipped.
+                  Some transactions above are already in your database or duplicated in this upload and will be skipped.
                 </p>
               )}
             <div className="flex gap-3">
@@ -367,7 +385,6 @@ export default function AddTransaction() {
         <h1 className="font-display text-2xl sm:text-3xl font-bold mb-1">{editId ? "Edit transaction" : "Add transaction"}</h1>
         <p className="text-muted-foreground text-sm mb-6">{editId ? "Update the details below." : "Record a new income or expense."}</p>
         <TransactionForm
-          key={scannedResults.length === 1 ? Date.now() : "initial"}
           initial={initial}
           scannedData={scannedResults.length === 1 ? scannedResults[0] : null}
           submitting={upsert.isPending}

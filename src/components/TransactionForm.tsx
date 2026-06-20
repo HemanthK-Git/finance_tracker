@@ -59,11 +59,7 @@ export function TransactionForm({
         time: initial.time || "",
         note: initial.note ?? "",
       });
-    }
-  }, [initial, form]);
-
-  useEffect(() => {
-    if (scannedData) {
+    } else if (scannedData) {
       form.reset({
         type: scannedData.type || "expense",
         amount: scannedData.amount ?? 0,
@@ -73,7 +69,7 @@ export function TransactionForm({
         note: scannedData.note || "Scanned from receipt",
       });
     }
-  }, [scannedData, form]);
+  }, [initial, scannedData, form]);
 
   const type = form.watch("type");
 

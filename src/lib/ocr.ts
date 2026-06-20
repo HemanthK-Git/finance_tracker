@@ -63,7 +63,7 @@ export function parseMultipleTransactions(text: string): ScannedData[] {
   lines.forEach((line, idx) => {
     let match;
     while ((match = amtRegex.exec(line)) !== null) {
-      let valStr = match[1].replace(/\s+/g, '').replace(',', '.');
+      const valStr = match[1].replace(/\s+/g, '').replace(',', '.');
       
       // Smart Decimal Fix: If we see 2000 but it's PhonePe format, it's often 20.00
       // However, we only fix it if there's a dot/comma that was read as a space
@@ -111,7 +111,7 @@ export function parseMultipleTransactions(text: string): ScannedData[] {
 
 function findNearby(lines: string[], startIdx: number, regex: RegExp): string {
   // Search up to 12 lines above and 2 lines below (Statements have long gaps)
-  for (let offset of [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, 1, 2]) {
+  for (const offset of [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, 1, 2]) {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const match = lines[idx].match(regex);
@@ -126,7 +126,7 @@ function findNearbyNote(lines: string[], startIdx: number): string {
   const datePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(?:20\d{2})?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/i;
 
   // Pass 1: Look for explicit Merchant keywords (High Priority)
-  for (let offset of [-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, 0]) {
+  for (const offset of [-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, 0]) {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
@@ -142,7 +142,7 @@ function findNearbyNote(lines: string[], startIdx: number): string {
   }
 
   // Pass 2: Fallback to any text that isn't noise
-  for (let offset of [-1, -2, -3, -4, -5, -6, 0]) {
+  for (const offset of [-1, -2, -3, -4, -5, -6, 0]) {
     const idx = startIdx + offset;
     if (idx >= 0 && idx < lines.length) {
       const line = lines[idx];
@@ -189,7 +189,7 @@ export function formatDate(raw: string): string {
     // Usually format is "Day Month Year" or "Month Day Year"
     // Year is usually 4 digits, or the last number in the sequence
     let y = numbers.find(n => n.length === 4) || numbers[numbers.length - 1];
-    let d = numbers.find(n => n !== y) || numbers[0];
+    const d = numbers.find(n => n !== y) || numbers[0];
 
     if (y.length === 2) y = `20${y}`;
     return `${y}-${m}-${d.padStart(2, '0')}`;
@@ -199,7 +199,9 @@ export function formatDate(raw: string): string {
   try {
     const d = new Date(clean);
     if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-  } catch(e) {}
+  } catch(e) {
+    console.warn("formatDate fallback parse failed:", clean, e);
+  }
   
   return new Date().toISOString().split('T')[0];
 }
@@ -210,7 +212,7 @@ function formatTime(raw: string): string {
   const cleanRaw = raw.replace(/es on N/gi, 'AM').replace(/\s+/g, ' '); 
   const match = cleanRaw.match(/(\d{1,2})\s*[:\.\s]\s*(\d{2})\s*(AM|PM|am|pm)?/i);
   if (!match) return "";
-  let [_, hours, mins, ampm] = match;
+  const [_, hours, mins, ampm] = match;
   let h = parseInt(hours);
   if (ampm?.toUpperCase() === "PM" && h < 12) h += 12;
   if (ampm?.toUpperCase() === "AM" && h === 12) h = 0;
