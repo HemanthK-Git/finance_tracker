@@ -173,9 +173,33 @@ export default function AddTransaction() {
           };
         });
 
-        setScannedResults(results);
+        const existingTx = transactions || [];
+        const uniqueResults = results.filter((res, idx) => {
+          const dupInDb = existingTx.some(t => {
+            if (res.transactionId && t.note?.includes(res.transactionId)) return true;
+            if (res.transactionId && t.note?.includes("ID: ") && !t.note.includes(res.transactionId)) return false;
+            return t.amount === (res.amount || 0) &&
+              t.type === res.type &&
+              t.date === (res.date || "") &&
+              t.time === res.time &&
+              (t.note || "").toLowerCase().includes((res.note || "").toLowerCase().trim());
+          });
+          if (dupInDb) return false;
+          const dupInBatch = results.some((other, oi) =>
+            oi !== idx &&
+            other.amount === res.amount &&
+            other.type === res.type &&
+            other.date === res.date &&
+            other.time === res.time &&
+            (other.note || "").toLowerCase().trim() === (res.note || "").toLowerCase().trim()
+          );
+          return !dupInBatch;
+        });
+
+        const skippedCount = results.length - uniqueResults.length;
+        setScannedResults(uniqueResults);
         setScanning(false);
-        toast.success(`Loaded ${results.length} rows from Excel!`);
+        toast.success(`Loaded ${uniqueResults.length} rows${skippedCount > 0 ? ` (${skippedCount} duplicates skipped)` : ""} from Excel!`);
       } catch (error) {
         toast.error("Failed to parse file.");
         setScanning(false);
@@ -308,25 +332,8 @@ export default function AddTransaction() {
                   const dateObj = res.date ? new Date(res.date) : new Date();
                   const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-                  // Check if this specific item is a duplicate (Match ID + Type + Time)
-                  const isDuplicate = (transactions?.some(t => {
-                    if (res.transactionId && t.note?.includes(res.transactionId)) return true;
-                    if (res.transactionId && t.note?.includes("ID: ") && !t.note.includes(res.transactionId)) return false;
-                    return t.amount === (res.amount || 0) &&
-                      t.type === res.type &&
-                      t.time === res.time &&
-                      t.date === (res.date || new Date().toISOString().split('T')[0]) &&
-                      (t.note || "").toLowerCase().includes((res.note || "").toLowerCase().trim());
-                  })) || scannedResults.some((other, oi) =>
-                    oi !== idx &&
-                    other.amount === res.amount &&
-                    other.type === res.type &&
-                    other.date === res.date &&
-                    (other.note || "").toLowerCase().trim() === (res.note || "").toLowerCase().trim()
-                  );
-
                   return (
-                    <tr key={`${res.note}-${res.amount}-${res.date}-${idx}`} className={`group transition-colors ${isDuplicate ? 'bg-orange-500/5' : 'hover:bg-accent/5'}`}>
+                    <tr key={`${res.note}-${res.amount}-${res.date}-${idx}`} className="group transition-colors hover:bg-accent/5">
                       <td className="py-3 pr-4 align-top">
                         <div className="text-sm font-medium whitespace-nowrap">{formattedDate}</div>
                         <div className="text-[10px] text-muted-foreground font-mono">{res.time || "--:--"}</div>
@@ -346,11 +353,6 @@ export default function AddTransaction() {
                             {res.source && (
                               <span className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 font-medium">
                                 {res.source}
-                              </span>
-                            )}
-                            {isDuplicate && (
-                              <span className="text-[9px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded font-bold border border-orange-500/20 animate-pulse">
-                                ⚠️ ALREADY IN HISTORY
                               </span>
                             )}
                           </div>
