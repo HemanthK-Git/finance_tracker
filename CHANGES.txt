@@ -75,7 +75,12 @@ WHAT WAS FIXED AND CHANGED
     - Income type transactions → category "Income"
     - Person names that don't match any keyword → "Other"
 
-13. SAMPLE CSV FILES ADDED
+13. CSV vs XLSX PARSING (AddTransaction.tsx)
+    - Old: readAsBinaryString + type: "binary" for all files (deprecated, unreliable)
+    - Fix: CSV files → readAsText + type: "string"
+          XLSX/XLS files → readAsArrayBuffer + Uint8Array + type: "array"
+
+14. SAMPLE CSV FILES ADDED
     - excel/april-statement.csv (141 transactions)
     - excel/may-statement.csv (70 transactions)
     - excel/june-statement.csv (50 transactions)

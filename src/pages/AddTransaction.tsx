@@ -103,20 +103,15 @@ export default function AddTransaction() {
     if (!file) return;
 
     setScanning(true);
-    const reader = new FileReader();
-    reader.onerror = () => {
-      toast.error("Failed to read file.");
-      setScanning(false);
-    };
-    reader.onload = (evt) => {
+
+    const processSheet = (wb: XLSX.WorkBook) => {
       try {
-        const wb = XLSX.read(evt.target?.result, { type: "binary" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const rows = XLSX.utils.sheet_to_json(ws);
 
         if (rows.length === 0) {
-          toast.error("The Excel sheet seems to be empty.");
+          toast.error("The sheet seems to be empty.");
           setScanning(false);
           return;
         }
@@ -176,11 +171,31 @@ export default function AddTransaction() {
         setScanning(false);
         toast.success(`Loaded ${results.length} rows from Excel!`);
       } catch (error) {
-        toast.error("Failed to parse Excel file.");
+        toast.error("Failed to parse file.");
         setScanning(false);
       }
     };
-    reader.readAsBinaryString(file);
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      toast.error("Failed to read file.");
+      setScanning(false);
+    };
+
+    if (file.name.endsWith('.csv')) {
+      reader.onload = (evt) => {
+        const wb = XLSX.read(evt.target?.result, { type: "string" });
+        processSheet(wb);
+      };
+      reader.readAsText(file);
+    } else {
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        processSheet(wb);
+      };
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   return (
