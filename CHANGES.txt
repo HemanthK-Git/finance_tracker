@@ -83,10 +83,23 @@ WHAT WAS FIXED AND CHANGED
 14. CATEGORY COLUMN IN CSV (AddTransaction.tsx + CSV files)
     - New: parser looks for a "Category" column in the sheet
     - If present and non-empty, uses it directly; otherwise falls back to detectCategory()
-    - Sample CSVs updated with Category column header
-    - june-statement.csv has pre-filled categories for all 50 rows
+    - All sample CSVs updated with Category column header and pre-filled categories
+      via keyword matching (same logic as detectCategory())
+    - You can override any category by editing the CSV directly
 
-15. SAMPLE CSV FILES ADDED
+15. DUPLICATE FILTERING AT PARSE TIME (AddTransaction.tsx)
+    - Old: duplicates were shown in review table with "ALREADY IN HISTORY" badge
+           and a warning paragraph, but only skipped at bulk-add time
+    - Fix: duplicates are now filtered out immediately after parsing, before
+           setScannedResults(). Review table only shows unique items.
+    - DB duplicate check: match by transactionId OR by amount+type+date+time+note
+    - Batch duplicate check: match by amount+type+date+time+note within same file
+
+16. CATEGORY COLUMN IN REVIEW TABLE (AddTransaction.tsx)
+    - New: review table now has a Category column showing each transaction's
+           assigned category
+
+17. SAMPLE CSV FILES ADDED
     - excel/april-statement.csv (141 transactions)
     - excel/may-statement.csv (70 transactions)
     - excel/june-statement.csv (50 transactions)
