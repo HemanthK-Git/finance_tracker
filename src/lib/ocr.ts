@@ -231,15 +231,15 @@ function cleanNote(note: string): string {
     .trim() || "Transaction";
 }
 
-function detectCategory(text: string): string {
+export function detectCategory(text: string): string {
   const categories = {
-    Food: ["restaurant", "hotel", "cafe", "food", "burger", "pizza", "coffee", "lunch", "dinner", "grocery", "mart", "swiggy", "zomato", "vending"],
+    Food: ["restaurant", "hotel", "cafe", "food", "burger", "pizza", "coffee", "lunch", "dinner", "grocery", "groceries", "mart", "swiggy", "zomato", "vending", "bakery", "bakers", "sweet", "sweets", "tea", "stall", "dry fruit", "pan", "wok", "kitchen", "choco", "kirana"],
     Rent: ["rent", "lease", "apartment"],
-    Travel: ["uber", "ola", "petrol", "fuel", "gas", "taxi", "train", "flight", "indigo", "air", "irctc"],
+    Travel: ["uber", "ola", "petrol", "fuel", "gas", "taxi", "train", "flight", "indigo", "air", "irctc", "apsrtc", "rtc", "bus", "airline", "railway", "rapido", "metro", "oyo", "road transport", "parking"],
     Healthcare: ["pharmacy", "medical", "hospital", "doctor", "clinic", "medplus", "apollo"],
     Entertainment: ["movie", "cinema", "theatre", "netflix", "spotify", "game", "bookmyshow"],
-    Shopping: ["amazon", "flipkart", "myntra", "ajio", "nykaa", "meesho", "shopping", "mall", "store"],
-    Utilities: ["electricity", "water", "bill", "recharge", "mobile", "internet", "jio", "airtel", "vi", "bsnl"],
+    Shopping: ["amazon", "flipkart", "myntra", "ajio", "nykaa", "meesho", "shopping", "mall", "store", "marketings", "xerox", "zudio", "ikea", "haier", "salon", "traders", "trading"],
+    Utilities: ["electricity", "water", "bill", "recharge", "mobile", "internet", "jio", "airtel", "vi", "bsnl", "eazypay", "fiber", "fibre", "networks", "postpaid"],
     Savings: ["investment", "mutual fund", "sip", "stocks", "zerodha", "upstox", "groww", "deposit"],
   };
 

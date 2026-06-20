@@ -4,7 +4,7 @@ import { TransactionForm } from "@/components/TransactionForm";
 import { useTransactions, useUpsertTransaction } from "@/hooks/useTransactions";
 import { ArrowLeft, Scan, FileSpreadsheet, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { parseMultipleTransactions, formatDate, type ScannedData } from "@/lib/ocr";
+import { parseMultipleTransactions, formatDate, detectCategory, type ScannedData } from "@/lib/ocr";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -168,6 +168,7 @@ export default function AddTransaction() {
             note,
             date,
             time: time === "AM" || time === "PM" ? "--:--" : time,
+            category: type === "income" ? "Income" : detectCategory(note),
             transactionId: ref.trim(),
             source: file.name.substring(0, 15)
           };
